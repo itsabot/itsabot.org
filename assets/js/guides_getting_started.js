@@ -1,6 +1,6 @@
 (function(abot) {
-abot.GettingStarted = {}
-abot.GettingStarted.view = function() {
+abot.GuidesGettingStarted = {}
+abot.GuidesGettingStarted.view = function() {
 	return m(".main", [
 		m.component(abot.Header),
 		m(".content", [
@@ -46,20 +46,22 @@ abot.GettingStarted.view = function() {
 			m("h2", "Downloading, installing and running an Abot server"),
 			m("p", "Ensure you've installed Go and PostgreSQL is running, then open your terminal and type:"),
 			m("code", [
-				m(".line", "$ git clone git@itsabot.org:repositories/abot.git"),
+				m(".line", "$ git clone git@www.itsabot.org:abot.git"),
 				m(".line", "$ cd abot"),
 				m(".line", "$ createdb abot"),
 				m(".line", "$ chmod +x cmd/*.sh"),
-				m(".line", "$ cmd/migrateup"),
+				m(".line", "$ cmd/migrateup.sh"),
 			]),
 			m("p", "This will download Abot and set up your database. Then run:"),
 			m("code", [
-				m(".line", "$ go get ./..."),
 				m(".line", "$ go install ./..."),
 				m(".line", "$ abot -s"),
 			]),
-			m("p", "to start your server."),
-
+			m("p", [
+				"to start your server. The ",
+				m("span.code-inline", "-s"),
+				" flag stands for \"server\", and it will run by default on port 4200, though that can be set through the PORT environment variable.",
+			]),
 			m("p", [
 				"To communicate with Abot locally, talk to her using ",
 				m("span.code-inline", "abotc"),
@@ -127,32 +129,106 @@ abot.GettingStarted.view = function() {
 			m("p", "Let's build a \"Hello World\" package, which will introduce you to the package API. First, let's create our package directory:"),
 			m("code", [
 				m(".line", "$ mkdir packages/abot_hello"),
-				m(".line", "$ touch packages/abot_hello/abot_hello.go"),
 			]),
 			m("p", [
-				"Now let's take a look at the contents of a simple package. You should include the below code snippets into , or you can download a working version ",
+				"Now let's take a look at the contents of a simple package. You should download and copy this working version and save it to packages/abot_hello/",
 				// TODO
-				m("a[href=/guides/getting_started/abot_hello.go]", "here."),
+				m("a[href=http://pastebin.com/raw/zPY2sTuT]", "abot_hello.go"),
+				". Be sure to read through the comments in the file, as the comments will explain the API as its introduced and used.",
 			]),
+			m("h3", "Package Setup"),
+			m("p", [
+				"At this point, you've downloaded the complete Hello World package from above (",
+				m("a[href=http://pastebin.com/raw/zPY2sTuT]", "abot_hello.go"),
+				") and saved it to packages/abot_hello/abot_hello.go. Let's ensure that Abot knows about the new package by adding it to the packages.json file.",
+			]),
+			m("pre", [
+				m("code", [
+					'{\n',
+					'	"name": "abot",\n',
+					'	"version": "0.0.1",\n',
+					'	"dependencies": {\n',
+					'		"abot_hello": "*"\n',
+					'	}\n',
+					'}',
+				]),
+			]),
+			m("p", "Now we'll recompile and install Abot and run it. From your terminal, type:"),
+			m("code", [
+				"$ go install ./... && abot -s",
+			]),
+			m("p", "You should see Abot boot with a line or two mentioning our new package, abot_hello. Let's test it out. Open another terminal while abot -s is still running, and type:"),
+			m("code", [
+				m(".line", "$ abotc localhost:4200 +13105555555"),
+				m(".line", "> Say something"),
+				m(".line", "Hello World!"),
+			]),
+			m("p", "Abot just routed your message to the package based on the trigger defined in our abot_hello.go. The state machine told it to respond with \"Hello World!\" when it entered its first state, and since there were no other states, that state is replayed every time a new message matching abot_hello.go's trigger is sent to Abot. Now let's try to connect Abot to SMS, so it responds to our text messages."),
+			
+			m("h2", "Configuring SMS"),
+			m("p", "Abot makes it easy to add support for multiple communication tools, including SMS, phone, email, Slack, etc. In this guide, we'll learn how to set up SMS, so we can communicate with this new digital assistant via text messages."),
+			m("p", "First we'll need an SMS provider. We'll use Twilio, but you can use any provider with some modifications to Abot's code."),
+			m("p", [
+				"Sign up for Twilio here: ",
+				m("a[href=https://www.twilio.com/]", "https://www.twilio.com/"),
+				". Take note of your assigned account SID, auth token, and Twilio phone number. You'll want to set the following environment variables in your ~/.bash_profile or ~/.bashrc:",
+			]),
+			m("code", [
+				m(".line", "export TWILIO_ACCOUNT_SID=\"REPLACE\""),
+				m(".line", "export TWILIO_AUTH_TOKEN=\"REPLACE\""),
+				m(".line", "export TWILIO_PHONE=\"REPLACE\""),
+			]),
+			m("p", "Be sure your TWILIO_PHONE is in the form of +13105551234. The leading plus symbol is required."),
+			m("p", "In order to communicate with Abot over SMS, Twilio has to be able to reach Abot, but until this point, we've been testing Abot locally on your machine--and Twilio has no way to reach that. Thus, we'll deploy Abot to make it accessible to the world."),
 
 			m("h2", "Deploying your Abot"),
-			m("p", "For this guide we'll deploy to Heroku to keep things simple, but Go and Abot makes it easy to deploy on any web server."),
+			m("p", [
+				"For this guide we'll deploy to Heroku to keep things simple, but Go and Abot make it easy to deploy on any web server. To learn about deploying a Go project on Heroku, first familiarize yourself with this tutorial from Heroku: ",
+				m("a[href=https://devcenter.heroku.com/articles/getting-started-with-go]", "Getting Started with Go on Heroku"),
+				". Once you have a grasp of what we're doing, open a terminal and run:",
+			]),
+			m("code", [
+				m(".line", "heroku create"),
+				m(".line", "heroku config:set TWILIO_ACCOUNT_SID=REPLACE \\"),
+				m(".line", "TWILIO_AUTH_TOKEN=REPLACE \\"),
+				m(".line", "TWILIO_PHONE=REPLACE"),
+				m(".line", "heroku addons:create heroku-postgresql:hobby-dev --version 9.5"),
+				m(".line", "heroku pg:psql < db/migrations/up/*.sql"),
+				m(".line", "git push heroku master"),
+				m(".line", "heroku open"),
+			]),
+			m("p", [
+				"Be sure to replace REPLACE above with your values from before. If everything booted correctly, you'll see the \"Congratulations, you're running Abot!\" screen. If not, you can track down any issues with ",
+				m("span.code-inline", "heroku logs --tail"),
+				".",
+			]),
+
+			m("h2", "Testing out Abot"),
+			m("p", [
+				"To try Abot, let's first create an Abot account. Go to the site (",
+				m("span.code-inline", "heroku open"),
+				") and click on Sign Up in the header at the top right. When entering your phone number, be sure to enter it in the format of +13105551234, or Twilio will reject it.",
+			]),
+			m("p", "Once you've signed up, send Abot a text at your TWILIO_PHONE number from before:"),
+			m("code", "Say hi"),
+			m("p", "Sometimes responses via Twilio take a few seconds, but you should get a reply back soon,"),
+			m("code", "Hello World!"),
 
 			m("h2", "Next steps"),
 			m("p", "As next steps, try:"),
 			m("ul", [
-				m("li", m("a[href=#/]", "Creating an Account")),
-				m("li", m("a[href=#/]", "Speaking to Abot")),
 				m("li", [
-					"Reading the ",
-					m("a[href=#/]", "Getting Started guide.")
+					"Building ",
+					m("a[href=/guides/advanced_packages]", "Advanced Packages"),
 				]),
-				m("li", m("a[href=#/]", "Building a package")),
 				m("li", [
 					"Learning ",
-					m("a[href=#/]", "How to Contribute.")
+					m("a[href=#/]", "How to Contribute")
 				]),
-				m("li", "Deploying to Heroku (coming soon)")
+				m("li", [
+					"See what's on our ",
+					m("a[href=#/]", "Roadmap")
+				]),
 			])
 		])
 	])

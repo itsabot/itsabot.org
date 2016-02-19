@@ -461,8 +461,15 @@ code {
 	font-weight: 700;
 	font-family: monospace;
 }
-code .line {
+code .line, pre code {
 	line-height: 1.5em;
+}
+code .line.indent-1 {
+	padding-left: 5em;
+}
+iframe.code {
+	width: 100%;
+	min-height: 600px;
 }
 .content {
 	margin-top: 3em;
@@ -489,7 +496,7 @@ body {
 	font-size: 1.2em;
 }
 .main {
-	width: 700px;
+	max-width: 700px;
 	display: block;
 	margin: 0 auto;
 }
