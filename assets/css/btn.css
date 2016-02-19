@@ -1,0 +1,12 @@
+.btn {
+	background-color: #039be5;
+	color: white;
+	text-align: centered;
+	padding: 1em;
+	font-size: 1em;
+	font-family: Georgia, serif;
+}
+
+.btn-container {
+	margin: 3em;
+}

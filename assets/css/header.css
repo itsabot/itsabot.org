@@ -1,0 +1,13 @@
+header {
+	margin-top: 2em;
+}
+header .links {
+	float: right;
+	display: inline;
+}
+header .links a {
+	margin-right: 1em;
+}
+header .logo {
+	display: inline;
+}

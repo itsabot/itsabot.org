@@ -1,0 +1,17 @@
+code {
+	padding: 1em;
+	display: inline-block;
+	background-color: #111;
+	color: white;
+	width: 100%;
+	font-size: 13px;
+}
+.code-inline {
+	background-color: #fdf6e3;
+	color: #dc322f;
+	font-weight: 700;
+	font-family: monospace;
+}
+code .line {
+	line-height: 1.5em;
+}
