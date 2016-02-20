@@ -12,10 +12,13 @@ abot.Header.view = function() {
 					href: "/",
 					config: m.route
 				}, "API"),
+				// TODO
+				/*
 				m("a", {
 					href: "/",
 					config: m.route
 				}, "Packages"),
+				*/
 				m("a", {
 					href: "/",
 					config: m.route

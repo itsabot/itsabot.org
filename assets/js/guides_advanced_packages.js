@@ -5,26 +5,20 @@ abot.GuidesAdvancedPackages.view = function() {
 		m.component(abot.Header),
 		m(".content", [
 			m("h1", "Advanced Packages"),
-			m("p", "This guide covers advanced package features."),
+			m("p", "This guide teaches advanced package development features."),
 			m("p", "You'll learn:"),
 			m("ul", [
 				m("li", "How to set up and use a state machine."),
-				m("li", "How to respond to keywords."),
-				m("li", "How to ."),
-			]),
-			m("p", [
-				"But before we begin, it's pronounced ",
-				m("em", "Eh-Bot"),
-				", like the Canadians, not ",
-				m("em", "uh-bot."),
+				m("li", "How to respond to keywords alongside a state machine."),
+				m("li", "How to integrate an external service."),
+				m("li", "How to handle branching conversations."),
 			]),
 
-			m("h2", "Guide assumptions"),
+			m("h2", "Setting up a state machine"),
 			m("p", [
-				"This guide is designed for developers that want to build a digital assistant from scratch. It does not assume any prior experience with Abot or A.I. or machine learning. Abot is a digital assistant framework built using the ",
-				m("a[href=https://golang.org/]", "Go programming language"),
-				". To learn Go, please read through some of the available resources:",
+				"A state machine is the core of any package, so first let's ",
 			]),
+			m("p", "Generally, a state machine is a great tool to manage a user's progression in a converstation from some start to some end, such as "),
 			m("ul", [
 				m("li", [
 					m("a[href=https://tour.golang.org/basics/1]", "A Tour of Go"),

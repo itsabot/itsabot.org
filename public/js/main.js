@@ -10,11 +10,40 @@ window.addEventListener("load", function() {
 	m.route.mode = "pathname"
 	m.route(document.body, "/", {
 		"/": abot.Index,
+		"/help": abot.AskForHelp,
 		"/guides": abot.Guides,
 		"/guides/getting_started": abot.GuidesGettingStarted,
 		"/guides/advanced_packages": abot.GuidesAdvancedPackages,
+		"/guides/contributing": abot.GuidesContributing,
 	})
 })
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.AskForHelp = {}
+abot.AskForHelp.view = function() {
+	return m(".main", [
+		m.component(abot.Header),
+		m(".content", [
+			m("h1", "Ask for help"),
+			m("ul", [
+				m("li", [
+					m("a[href=https://groups.google.com/forum/#!forum/abot-discussion]", "Join our discussion mailing group:"),
+					" You'll speak directly to core contributors who can help you with any problems you have."
+				]),
+				m("li", [
+					m("a[href=https://bugzilla.itsabot.org/]", "Report a bug:"),
+					" We'll get back to you quickly with a timeline and let you know when a fix will be available."
+				]),
+				m("li", [
+					m("a[href=mailto:admin@itsabot.org]", "Report a security vulnerability:"),
+					" If you discover a security vulnerability, please do not email the discussion group or post on Bugzilla. Instead, please email the founder directly through ",
+					m("a[href=mailto:admin@itsabot.org]", "admin@itsabot.org"),
+					".",
+				]),
+			]),
+		]),
+	])
+}
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
 abot.GuidesAdvancedPackages = {}
@@ -23,26 +52,20 @@ abot.GuidesAdvancedPackages.view = function() {
 		m.component(abot.Header),
 		m(".content", [
 			m("h1", "Advanced Packages"),
-			m("p", "This guide covers advanced package features."),
+			m("p", "This guide teaches advanced package development features."),
 			m("p", "You'll learn:"),
 			m("ul", [
 				m("li", "How to set up and use a state machine."),
-				m("li", "How to respond to keywords."),
-				m("li", "How to ."),
-			]),
-			m("p", [
-				"But before we begin, it's pronounced ",
-				m("em", "Eh-Bot"),
-				", like the Canadians, not ",
-				m("em", "uh-bot."),
+				m("li", "How to respond to keywords alongside a state machine."),
+				m("li", "How to integrate an external service."),
+				m("li", "How to handle branching conversations."),
 			]),
 
-			m("h2", "Guide assumptions"),
+			m("h2", "Setting up a state machine"),
 			m("p", [
-				"This guide is designed for developers that want to build a digital assistant from scratch. It does not assume any prior experience with Abot or A.I. or machine learning. Abot is a digital assistant framework built using the ",
-				m("a[href=https://golang.org/]", "Go programming language"),
-				". To learn Go, please read through some of the available resources:",
+				"A state machine is the core of any package, so first let's ",
 			]),
+			m("p", "Generally, a state machine is a great tool to manage a user's progression in a converstation from some start to some end, such as "),
 			m("ul", [
 				m("li", [
 					m("a[href=https://tour.golang.org/basics/1]", "A Tour of Go"),
@@ -246,6 +269,22 @@ abot.GuidesAdvancedPackages.view = function() {
 				]),
 			])
 		])
+	])
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.GuidesContributing = {}
+abot.GuidesContributing.view = function() {
+	return m(".main", [
+		m.component(abot.Header),
+		m(".content", [
+			m("h1", "How to contribute"),
+			m("h2", "Contributor's workflow"),
+			m("p", "Unlike many open-source projects, we've "),
+
+			m("h2", "Abot core and packages"),
+			m("p", "If you build a great package that could help others, send a . This constitutes anything in the Abot repo."),
+		]),
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);
@@ -492,11 +531,24 @@ abot.Guides.view = function() {
 		m.component(abot.Header),
 		m(".content", [
 			m("h1", "Guides"),
+			m("p", [
+				"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightfue as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
+			]),
+			m("p", [
+				"Interested in contributing a guide? Visit the ",
+				m("a[href=/guides/contribute]", "How to Contribute"),
+				" guide to learn more.",
+			]),
 			m("ol", [
 				m("li", [
 					m("a[href=guides/getting_started]", {
 						config: m.route,
 					}, "Getting Started"),
+				]),
+				m("li", [
+					m("a[href=guides/contributing]", {
+						config: m.route,
+					}, "Contributing"),
 				]),
 			])
 		])
@@ -517,10 +569,13 @@ abot.Header.view = function() {
 					href: "/",
 					config: m.route
 				}, "API"),
+				// TODO
+				/*
 				m("a", {
 					href: "/",
 					config: m.route
 				}, "Packages"),
+				*/
 				m("a", {
 					href: "/",
 					config: m.route
