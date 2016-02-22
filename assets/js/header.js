@@ -1,31 +1,24 @@
 (function(abot) {
 abot.Header = {}
-abot.Header.view = function() {
+abot.Header.view = function(args) {
+	args = args || {}
 	return m("header", [
-		m("div", [
+		m(".header-content", [
 			m(".links", [
 				m("a", {
 					href: "/guides",
 					config: m.route
 				}, "Guides"),
+				m("a[href=https://godoc.org/github.com/itsabot/abot]", "API"),
 				m("a", {
-					href: "/",
-					config: m.route
-				}, "API"),
-				// TODO
-				/*
-				m("a", {
-					href: "/",
+					href: "/packages",
 					config: m.route
 				}, "Packages"),
-				*/
 				m("a", {
-					href: "/",
-					config: m.route
+					href: "https://groups.google.com/forum/#!forum/abot-discussion",
 				}, "Ask for help"),
 				m("a", {
-					href: "/",
-					config: m.route
+					href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
 				}, "Contribute"),
 			]),
 			m(".logo", [

@@ -10,11 +10,8 @@ window.addEventListener("load", function() {
 	m.route.mode = "pathname"
 	m.route(document.body, "/", {
 		"/": abot.Index,
-		"/help": abot.AskForHelp,
 		"/guides": abot.Guides,
-		"/guides/getting_started": abot.GuidesGettingStarted,
-		"/guides/advanced_packages": abot.GuidesAdvancedPackages,
-		"/guides/contributing": abot.GuidesContributing,
+		"/packages": abot.Packages,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
@@ -527,29 +524,33 @@ abot.GuidesGettingStarted.view = function() {
 (function(abot) {
 abot.Guides = {}
 abot.Guides.view = function() {
-	return m(".main", [
+	return m("div", [
 		m.component(abot.Header),
-		m(".content", [
-			m("h1", "Guides"),
-			m("p", [
-				"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightfue as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
-			]),
-			m("p", [
-				"Interested in contributing a guide? Visit the ",
-				m("a[href=/guides/contribute]", "How to Contribute"),
-				" guide to learn more.",
-			]),
-			m("ol", [
-				m("li", [
-					m("a[href=guides/getting_started]", {
-						config: m.route,
-					}, "Getting Started"),
+		m(".main", [
+			m(".content", [
+				m("h1", "Guides"),
+				m("p", [
+					"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightfue as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
 				]),
-				m("li", [
-					m("a[href=guides/contributing]", {
-						config: m.route,
-					}, "Contributing"),
+				m("p", [
+					"Interested in contributing a guide? Visit the ",
+					m("a", {
+						href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
+					}, "How to Contribute"),
+					" guide to learn more.",
 				]),
+				m("ol", [
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Getting-Started",
+						}, "Getting Started"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
+						}, "Contributing"),
+					]),
+				])
 			])
 		])
 	])
@@ -557,32 +558,25 @@ abot.Guides.view = function() {
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
 abot.Header = {}
-abot.Header.view = function() {
+abot.Header.view = function(args) {
+	args = args || {}
 	return m("header", [
-		m("div", [
+		m(".header-content", [
 			m(".links", [
 				m("a", {
 					href: "/guides",
 					config: m.route
 				}, "Guides"),
+				m("a[href=https://godoc.org/github.com/itsabot/abot]", "API"),
 				m("a", {
-					href: "/",
-					config: m.route
-				}, "API"),
-				// TODO
-				/*
-				m("a", {
-					href: "/",
+					href: "/packages",
 					config: m.route
 				}, "Packages"),
-				*/
 				m("a", {
-					href: "/",
-					config: m.route
+					href: "https://groups.google.com/forum/#!forum/abot-discussion",
 				}, "Ask for help"),
 				m("a", {
-					href: "/",
-					config: m.route
+					href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
 				}, "Contribute"),
 			]),
 			m(".logo", [
@@ -599,30 +593,84 @@ abot.Header.view = function() {
 (function(abot) {
 abot.Index = {}
 abot.Index.view = function() {
-	return m(".main", [
+	return m("div", [
+		m(".hero-container", [
+			m.component(abot.Header),
+			m(".main", [
+				m(".hero", [
+					m("h1", "Build your own digital assistant"),
+					m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
+					m(".btn-container", [
+						m("a[href=https://github.com/itsabot/abot].btn", "Download the latest version"),
+						m("div", m(".subtle", "Pre-alpha, version 0.0.1")),
+					]),
+					m("img[src=/public/images/abot_2.png].left"),
+					m("img[src=/public/images/abot_1.png].center"),
+					m("img[src=/public/images/abot_3.png].right"),
+				]),
+			]),
+		]),
+		m(".main", [
+			m(".content", [
+				m("p", [
+					m("strong", "Abot is open source software. "),
+					"That means it's free to use, and you can re-program it to do anything you can imagine.",
+				]),
+				m("p", [
+					m("strong", "We make it easy to build the assistant. "),
+					"Abot comes pre-installed with tools to manage and understand human language and guides to help you.",
+				]),
+				m("p", [
+					m("strong", "Make it available everywhere. "),
+					"Ava exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
+				]),
+			]),
+		]),
+	])
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.Packages = {}
+abot.Packages.view = function() {
+	return m("div", [
 		m.component(abot.Header),
-		m(".content", [
-			m(".centered", [
-				m("img[src=public/img/logo-no-text.svg]"),
-				m("h1", "Build your own digital assistant"),
-				m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
-				m(".btn-container", [
-					m("a[href=getting_started].btn", "Download the latest version"),
-				])
-			]),
-			m("p", [
-				m("strong", "Abot is open source software. "),
-				"That means it's free to use, and you can re-program it.",
-			]),
-			m("p", [
-				m("strong", "We make it easy to build the assistant. "),
-				"Abot comes pre-installed with tools to manage and understand human language and guides to help you.",
-			]),
-			m("p", [
-				m("strong", "Make it available everywhere. "),
-				"Ava exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
-			]),
+		m.component(abot.Searchbar),
+		m(".main", [
+			m(".content", [
+				m("ol.search-results", [
+					m.component(abot.SearchResult),
+				]),
+			])
 		])
+	])
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.Searchbar = {}
+abot.Searchbar.controller = function() {
+	var ctrl = this
+	ctrl.focus = function(el) {
+		el.focus()
+	}
+}
+abot.Searchbar.view = function(ctrl) {
+	return m(".searchbar", [
+		m(".main", [
+			m("input[type=text]", {
+				placeholder: "Find packages",
+				config: ctrl.focus,
+			}),
+			m("button", "Search"),
+		]),
+	])
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.SearchResult = {}
+abot.SearchResult.view = function() {
+	return m("li", [
+		m("a[href=#/]", "github.com/itsabot/pkg_restaurant"),
+		" username",
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);

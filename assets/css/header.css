@@ -1,13 +1,27 @@
 header {
-	margin-top: 2em;
+	padding: 2em 0;
+	background-color: #607d8b;
+	width: 100%;
+	font-size: 0.85em;
+}
+header a {
+	color: white;
+	text-decoration: none;
 }
 header .links {
 	float: right;
-	display: inline;
 }
 header .links a {
 	margin-right: 1em;
 }
 header .logo {
+	text-transform: uppercase;
+	letter-spacing: 3px;
+	padding: 0.5em 1em;
+	border: 1px solid white;	
 	display: inline;
+}
+header .header-content {
+	max-width: 960px;
+	margin: 0 auto;
 }

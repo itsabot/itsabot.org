@@ -1,0 +1,10 @@
+.search-results {
+	padding: 0; 
+	list-style-type: none;
+}
+.search-results li {
+	color: gray;
+}
+.search-results li a {
+	margin-right: 1em;
+}

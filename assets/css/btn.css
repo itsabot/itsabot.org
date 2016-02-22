@@ -4,9 +4,13 @@
 	text-align: centered;
 	padding: 1em;
 	font-size: 1em;
-	font-family: Georgia, serif;
+	text-decoration: none;
+	display: inline-block;
 }
-
 .btn-container {
-	margin: 3em;
+	margin: 1.5em 0 3em 0;
+}
+.btn-container .subtle {
+	font-size: 0.8em;
+	font-style: italic;
 }
