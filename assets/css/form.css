@@ -1,0 +1,11 @@
+form .form-el {
+	margin: 1.5em 0;
+}
+form input {
+	padding: 0.5em;
+}
+form label {
+	font-weight: bold;
+	display: block;
+	margin-bottom: 0.5em;
+}

@@ -422,6 +422,20 @@ td,
 th {
 	padding: 0;
 }
+.alert {
+	padding: 1em 1.5em;
+	border: 1px solid;
+}
+.alert.alert-success {
+	color: #3c763d;
+	background-color: #dff0d8;
+	border-color: #d0e9c6;
+}
+.alert.alert-error {
+	color: #a94442;
+	background-color: #f2dede;
+	border-color: #ebcccc;
+}
 .btn {
 	background-color: #039be5;
 	color: white;
@@ -552,6 +566,17 @@ footer {
 	width: 100%;
 	text-align: center;
 }
+form .form-el {
+	margin: 1.5em 0;
+}
+form input {
+	padding: 0.5em;
+}
+form label {
+	font-weight: bold;
+	display: block;
+	margin-bottom: 0.5em;
+}
 header {
 	padding: 2em 0;
 	background-color: #607d8b;
@@ -634,6 +659,9 @@ body {
 	display: block;
 	margin: 0 auto;
 	padding: 0 1.5em;
+}
+.hidden {
+	display: none;
 }
 .paragraph {
 	margin-top: 1em;

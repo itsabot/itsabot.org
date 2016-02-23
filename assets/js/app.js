@@ -5,6 +5,7 @@ window.addEventListener("load", function() {
 		"/": abot.Index,
 		"/guides": abot.Guides,
 		"/packages": abot.Packages,
+		"/packages/new": abot.PackagesNew,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
