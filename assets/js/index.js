@@ -20,20 +20,41 @@ abot.Index.view = function() {
 		]),
 		m(".main", [
 			m(".content", [
-				m("p", [
-					m("strong", "Abot is open source software. "),
-					"That means it's free to use, and you can re-program it to do anything you can imagine.",
+				m(".focusbox", [
+					m(".focusbox-center", [
+						m("h2", "Automate critical tasks"),
+						m("p", "Whether you're automating customer service; inbound sales; or just want your own, personal Jarvis, let Abot do the heavy lifting."),
+					]),
 				]),
-				m("p", [
-					m("strong", "We make it easy to build the assistant. "),
-					"Abot comes pre-installed with tools to manage and understand human language and guides to help you.",
-				]),
-				m("p", [
-					m("strong", "Make it available everywhere. "),
-					"Ava exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
+			]),
+			m(".content", [
+				m(".focusbox", [
+					m(".focusbox-third", [
+						m("p", [
+							m("h3", "Abot is open-source"),
+							"That means it's free to use, and you can re-program it to do anything you can imagine. ",
+							m("a[href=/packages]", {
+								config: m.route,
+							}, "Search for pre-built packages"),
+							" or create your own.",
+						]),
+					]),
+					m(".focusbox-third", [
+						m("p", [
+							m("h3", "Easy to build"),
+							"We make it easy to build the assistant. Abot comes pre-installed with tools to manage and understand human language and guides to help.",
+						]),
+					]),
+					m(".focusbox-third", [
+						m("p", [
+							m("h3", "Available everywhere"),
+							"Ava exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
+						]),
+					]),
 				]),
 			]),
 		]),
+		m.component(abot.Footer),
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);

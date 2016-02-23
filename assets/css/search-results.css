@@ -7,4 +7,20 @@
 }
 .search-results li a {
 	margin-right: 1em;
+	text-decoration: none;
+}
+.search-results li table {
+	width: 100%;
+}
+.search-results li table tr {
+	display: block;
+	border-bottom: 1px solid #ccc;
+	padding: 1.5em;
+	margin-left: -1.5em;
+}
+.search-results li table tr td {
+	width: 100%;
+}
+.search-results .downloads {
+	text-align: right;
 }

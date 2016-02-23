@@ -438,6 +438,13 @@ th {
 	font-size: 0.8em;
 	font-style: italic;
 }
+.btn.clear {
+	float: right;
+	color: #666;
+	border: 1px solid #666;
+	padding: 0.5em 1.5em;
+	background-color: transparent;
+}
 .card {
 	padding: 1em;
 	background-color: #ccc;
@@ -478,6 +485,73 @@ iframe.code {
 .content {
 	margin-top: 3em;
 }
+.focusbox {
+	text-align: center;
+}
+.focusbox .focusbox-third {
+	width: 30%;
+	text-align: center;
+	display: inline-block;
+	margin-right: 1em;
+}
+.focusbox .focusbox-third.focusbox-icon {
+	text-align: left;
+	vertical-align: top;
+}
+.focusbox .focusbox-third.focusbox-icon h4 {
+	margin-bottom: 0.5em;
+}
+.focusbox .focusbox-icon h4 a {
+	color: black;
+	text-decoration: none;
+}
+.focusbox .focusbox-third.focusbox-icon .description {
+	color: #666;
+	font-size: 0.85em;
+	min-height: 2.4em;
+}
+.focusbox .focusbox-third.focusbox-icon .link {
+	font-size: 0.85em;
+}
+.focusbox .focusbox-third.focusbox-icon .link a {
+	color: #666;
+}
+.focusbox .focusbox-btn {
+	border-radius: 5px;
+	padding: 1.5em 0;
+}
+.focusbox .focusbox-btn:hover {
+	border: 1px solid white;
+	background-color: #ecf2f5;
+}
+.focusbox .focusbox-btn h4 {
+	margin-top: 0;
+}
+.focusbox .focusbox-center {
+	width: 80%;
+	text-align: center;
+	display: block;
+	margin: 0 auto;
+	padding-bottom: 2em;
+	border-bottom: 1px solid #ccc;
+}
+@media(max-width: 650px) {
+	.focusbox .focusbox-center {
+		width: 100%;
+		text-align: left;
+	}
+	.focusbox .focusbox-third {
+		width: 100%;
+		margin-right: 0;
+		text-align: left;
+	}
+}
+footer {
+	margin-top: 2em;
+	padding: 1em 0 1em 0;
+	width: 100%;
+	text-align: center;
+}
 header {
 	padding: 2em 0;
 	background-color: #607d8b;
@@ -494,7 +568,7 @@ header .links {
 header .links a {
 	margin-right: 1em;
 }
-header .logo {
+header .logo a {
 	text-transform: uppercase;
 	letter-spacing: 3px;
 	padding: 0.5em 1em;
@@ -539,6 +613,12 @@ header .header-content {
 .hero-container {
 	background-color: #607d8b;
 }
+.icon {
+	font-size: 1.5em;
+}
+.icon-red {
+	color: red;
+}
 html {
 	padding: 0;
 	margin: 0;
@@ -555,6 +635,13 @@ body {
 	margin: 0 auto;
 	padding: 0 1.5em;
 }
+.paragraph {
+	margin-top: 1em;
+}
+.paragraph a {
+	color: black;
+	text-decoration: none;
+}
 .searchbar {
 	padding: 1em 0;
 	background-color: #d8d8d8;
@@ -562,7 +649,6 @@ body {
 .searchbar input {
 	font-size: 1.2em;
 	padding: 0.5em;
-	width: 70%;
 }
 .searchbar input:hover {
 	border: 2px solid #bbb;
@@ -571,11 +657,28 @@ body {
 	border: 2px solid #eee;
 }
 .searchbar button {
+	width: 56px;
 	height: 54px;
 	position: relative;
 	right: 1px;
 	bottom: 1px;
 	padding: 0 1em;
+}
+.searchbar button .search {
+	-webkit-transform: rotate(45deg);
+	-moz-transform: rotate(45deg);
+	-o-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+@media(max-width: 650px) {
+	.searchbar button {
+		display: none;
+	}
+	.searchbar .main input {
+		width: 100%;
+		position: relative;
+		display: block;
+	}
 }
 .search-results {
 	padding: 0; 
@@ -586,4 +689,20 @@ body {
 }
 .search-results li a {
 	margin-right: 1em;
+	text-decoration: none;
+}
+.search-results li table {
+	width: 100%;
+}
+.search-results li table tr {
+	display: block;
+	border-bottom: 1px solid #ccc;
+	padding: 1.5em;
+	margin-left: -1.5em;
+}
+.search-results li table tr td {
+	width: 100%;
+}
+.search-results .downloads {
+	text-align: right;
 }

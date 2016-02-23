@@ -29,7 +29,8 @@ abot.Guides.view = function() {
 					]),
 				])
 			])
-		])
+		]),
+		m.component(abot.Footer),
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);

@@ -5,7 +5,6 @@
 .searchbar input {
 	font-size: 1.2em;
 	padding: 0.5em;
-	width: 70%;
 }
 .searchbar input:hover {
 	border: 2px solid #bbb;
@@ -14,9 +13,26 @@
 	border: 2px solid #eee;
 }
 .searchbar button {
+	width: 56px;
 	height: 54px;
 	position: relative;
 	right: 1px;
 	bottom: 1px;
 	padding: 0 1em;
+}
+.searchbar button .search {
+	-webkit-transform: rotate(45deg);
+	-moz-transform: rotate(45deg);
+	-o-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+@media(max-width: 650px) {
+	.searchbar button {
+		display: none;
+	}
+	.searchbar .main input {
+		width: 100%;
+		position: relative;
+		display: block;
+	}
 }

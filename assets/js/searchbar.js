@@ -13,7 +13,7 @@ abot.Searchbar.view = function(ctrl) {
 				placeholder: "Find packages",
 				config: ctrl.focus,
 			}),
-			m("button", "Search"),
+			m("button", m(".search", m.trust("&#9906;"))),
 		]),
 	])
 }
