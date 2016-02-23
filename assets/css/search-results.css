@@ -24,3 +24,7 @@
 .search-results .downloads {
 	text-align: right;
 }
+.search-results .description {
+	margin-top: 0.5em;
+	color: black;
+}

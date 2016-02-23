@@ -59,12 +59,12 @@ abot.Packages.view = function(ctrl) {
 					]))),
 					m("div", "Submit your package to be included in search."),
 
-					m(".paragraph", m("a[href=#/]", m("strong", [
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Building-a-Package]", m("strong", [
 						"Build a package ", m.trust("&raquo;")
 					]))),
 					m("div", "Learn how to build packages with branching dialog, complex states, and more."),
 
-					m(".paragraph", m("a[href=#/]", m("strong", [
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Package-Manager]", m("strong", [
 						"Integrate a package ", m.trust("&raquo;")
 					]))),
 					m("div", "Learn to use abotp, our package manager, to add packages to your Abot."),

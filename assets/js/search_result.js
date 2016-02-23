@@ -18,6 +18,7 @@ abot.SearchResult.view = function(_, pctrl) {
 							m("td", [
 								m("a[href=" + url + "]", item.Name),
 								" " + item.Username,
+								m(".description", item.Description),
 							]),
 							m("td", [
 								m(".downloads", item.DownloadCount), 
