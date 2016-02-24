@@ -44,7 +44,11 @@ func main() {
 	e.Get("/*", handlerIndex)
 	e.Get("/api/search.json", handlerAPIPackagesSearch)
 	e.Post("/api/packages.json", handlerAPIPackagesCreate)
-	e.Run(":" + os.Getenv("ITSABOT_PORT"))
+	if len(os.Getenv("ITSABOT_PORT")) > 0 {
+		e.Run(":" + os.Getenv("ITSABOT_PORT"))
+	} else {
+		e.Run(":" + os.Getenv("PORT"))
+	}
 }
 
 func handlerIndex(c *echo.Context) error {
