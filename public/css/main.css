@@ -612,24 +612,10 @@ header .header-content {
 	text-align: center;
 	color: white;
 	overflow-y: hidden;
-	height: 700px;
+	height: 650px;
 }
-.hero img.center {
-	position: relative;
-	max-width: 275px;
-	z-index: 2;
-}
-.hero img.left, .hero img.right {
-	position: relative;
-	bottom: 1.5em;
-	max-width: 225px;
-	z-index: 1;
-}
-.hero img.left {
-	left: 3em;
-}
-.hero img.right {
-	right: 3em;
+.hero img {
+	max-width: 100%;
 }
 .hero .btn {
 	border-bottom: 3px solid rgba(0, 0, 0, 0.4);
