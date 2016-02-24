@@ -37,18 +37,18 @@ func main() {
 	}
 	e := echo.New()
 	e.Use(mw.Logger(), mw.Gzip(), mw.Recover())
-	e.SetDebug(os.Getenv("ABOT_ENV") != "production")
+	e.SetDebug(os.Getenv("ITSABOT_ENV") != "production")
 	e.Static("/public/css", "public/css")
 	e.Static("/public/js", "public/js")
 	e.Static("/public/images", "assets/images")
 	e.Get("/*", handlerIndex)
 	e.Get("/api/search.json", handlerAPIPackagesSearch)
 	e.Post("/api/packages.json", handlerAPIPackagesCreate)
-	e.Run(":" + os.Getenv("ABOT_PORT"))
+	e.Run(":" + os.Getenv("ITSABOT_PORT"))
 }
 
 func handlerIndex(c *echo.Context) error {
-	if os.Getenv("ABOT_ENV") != "production" {
+	if os.Getenv("ITSABOT_ENV") != "production" {
 		var err error
 		tmplLayout, err = template.ParseFiles("assets/html/layout.html")
 		if err != nil {
