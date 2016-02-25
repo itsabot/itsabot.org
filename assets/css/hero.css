@@ -18,3 +18,8 @@
 .hero-container {
 	background-color: #607d8b;
 }
+@media(max-width: 650px) {
+	.hero {
+		padding-top: 0;
+	}
+}
