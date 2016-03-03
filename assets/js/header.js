@@ -8,9 +8,9 @@ abot.Header.view = function(args) {
 				m("a[href=/guides]", {
 					config: m.route
 				}, "Guides"),
-				m("a[href=/packages]", {
+				m("a[href=/plugins]", {
 					config: m.route
-				}, "Packages"),
+				}, "Plugins"),
 				m("a[href=https://godoc.org/github.com/itsabot/abot]", {
 					class: "hidden-small",
 				}, "API"),

@@ -31,9 +31,9 @@ abot.Index.view = function() {
 						m("p", [
 							m("h3", "Abot is open-source"),
 							"That means it's free to use, and you can re-program it to do anything you can imagine. ",
-							m("a[href=/packages]", {
+							m("a[href=/plugins]", {
 								config: m.route,
-							}, "Search for pre-built packages"),
+							}, "Search for pre-built plugins"),
 							" or create your own.",
 						]),
 					]),

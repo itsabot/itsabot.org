@@ -8,8 +8,8 @@ abot.SearchResult.view = function(_, pctrl) {
 					return m("tr", {
 						style: "border-bottom: none;"
 					}, m("td", [
-						"No results found. If you don't see your package, you can ",
-						m("a[href=/packages/new]", "add it here."),
+						"No results found. If you don't see your plugin, you can ",
+						m("a[href=/plugins/new]", "add it here."),
 					]))
 				} else {
 					return pctrl.props.results().map(function(item) {

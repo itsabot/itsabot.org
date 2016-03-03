@@ -1,31 +1,31 @@
 (function(abot) {
-abot.Packages = {}
-abot.Packages.controller = function() {
+abot.Plugins = {}
+abot.Plugins.controller = function() {
 	var ctrl = this
 	ctrl.clear = function() {
 		document.getElementById("searchbar-input").value = ""
-		document.getElementById("packages-start").classList.remove("hidden")
+		document.getElementById("plugins-start").classList.remove("hidden")
 		document.getElementById("search-results").classList.add("hidden")
 	}
 	ctrl.props = {
 		results: m.prop([])
 	}
 }
-abot.Packages.view = function(ctrl) {
+abot.Plugins.view = function(ctrl) {
 	return m("div", [
 		m.component(abot.Header),
 		m.component(abot.Searchbar, ctrl),
 		m(".main", [
-			m("#packages-start", [
+			m("#plugins-start", [
 				m(".content", [
-					m("h2", "Popular packages"),
+					m("h2", "Popular plugins"),
 					m(".focusbox", [
 						m(".focusbox-third.focusbox-icon", [
 							m("h4", m("a[href=#/]", "Restaurant")),
 							m(".description", "Search for restaurants nearby using Yelp. Find reviews, menus, and more."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_restaurants]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -35,7 +35,7 @@ abot.Packages.view = function(ctrl) {
 							m(".description", "Fix a broken car with searches for nearby mechanics."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_mechanic]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -45,7 +45,7 @@ abot.Packages.view = function(ctrl) {
 							m(".description", "Add support for credit card purchasing via Stripe."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_purchase]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -54,20 +54,20 @@ abot.Packages.view = function(ctrl) {
 				]),
 				m(".content", [
 					m("h2", "Getting started"),
-					m(".paragraph", m("a[href=/packages/new]", m("strong", [
-						"Add your package to itsabot.org ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=/plugins/new]", m("strong", [
+						"Add your plugin to itsabot.org ", m.trust("&raquo;")
 					]))),
-					m("div", "Submit your package to be included in search."),
+					m("div", "Submit your plugin to be included in search."),
 
-					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Building-a-Package]", m("strong", [
-						"Build a package ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Building-a-Plugin]", m("strong", [
+						"Build a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn how to build packages with branching dialog, complex states, and more."),
+					m("div", "Learn how to build plugins with branching dialog, complex states, and more."),
 
-					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Package-Manager]", m("strong", [
-						"Integrate a package ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager]", m("strong", [
+						"Integrate a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn to use abotp, our package manager, to add packages to your Abot."),
+					m("div", "Learn to use abotp, our plugin manager, to add plugins to your Abot."),
 				]),
 			]),
 			m("#search-results.hidden", [

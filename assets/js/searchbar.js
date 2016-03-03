@@ -9,7 +9,7 @@ abot.Searchbar.controller = function(pctrl) {
 		ev.preventDefault()
 		var input = ev.target.children[0]
 		if (input.value.length === 0) {
-			document.getElementById("packages-start").classList.remove("hidden")
+			document.getElementById("plugins-start").classList.remove("hidden")
 			document.getElementById("search-results").classList.add("hidden")
 			return
 		}
@@ -18,7 +18,7 @@ abot.Searchbar.controller = function(pctrl) {
 			url: window.location.origin + "/api/search.json?q=" + input.value
 		}).then(function(res) {
 			document.getElementById("search-results").classList.remove("hidden")
-			document.getElementById("packages-start").classList.add("hidden")
+			document.getElementById("plugins-start").classList.add("hidden")
 			res = res || []
 			pctrl.props.results(res)
 		}, function(err) {
@@ -31,7 +31,7 @@ abot.Searchbar.view = function(ctrl) {
 		m(".main", [
 			m("form", { onsubmit: ctrl.search }, [
 				m("input[type=text]#searchbar-input", {
-					placeholder: "Find packages",
+					placeholder: "Find plugins",
 					config: ctrl.focus,
 				}),
 				m("button[type=submit]", m(".search", m.trust("&#9906;"))),

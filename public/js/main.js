@@ -11,8 +11,8 @@ window.addEventListener("load", function() {
 	m.route(document.body, "/", {
 		"/": abot.Index,
 		"/guides": abot.Guides,
-		"/packages": abot.Packages,
-		"/packages/new": abot.PackagesNew,
+		"/plugins": abot.Plugins,
+		"/plugins/new": abot.PluginsNew,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
@@ -72,9 +72,9 @@ abot.Header.view = function(args) {
 				m("a[href=/guides]", {
 					config: m.route
 				}, "Guides"),
-				m("a[href=/packages]", {
+				m("a[href=/plugins]", {
 					config: m.route
-				}, "Packages"),
+				}, "Plugins"),
 				m("a[href=https://godoc.org/github.com/itsabot/abot]", {
 					class: "hidden-small",
 				}, "API"),
@@ -128,9 +128,9 @@ abot.Index.view = function() {
 						m("p", [
 							m("h3", "Abot is open-source"),
 							"That means it's free to use, and you can re-program it to do anything you can imagine. ",
-							m("a[href=/packages]", {
+							m("a[href=/plugins]", {
 								config: m.route,
-							}, "Search for pre-built packages"),
+							}, "Search for pre-built plugins"),
 							" or create your own.",
 						]),
 					]),
@@ -154,33 +154,33 @@ abot.Index.view = function() {
 }
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
-abot.Packages = {}
-abot.Packages.controller = function() {
+abot.Plugins = {}
+abot.Plugins.controller = function() {
 	var ctrl = this
 	ctrl.clear = function() {
 		document.getElementById("searchbar-input").value = ""
-		document.getElementById("packages-start").classList.remove("hidden")
+		document.getElementById("plugins-start").classList.remove("hidden")
 		document.getElementById("search-results").classList.add("hidden")
 	}
 	ctrl.props = {
 		results: m.prop([])
 	}
 }
-abot.Packages.view = function(ctrl) {
+abot.Plugins.view = function(ctrl) {
 	return m("div", [
 		m.component(abot.Header),
 		m.component(abot.Searchbar, ctrl),
 		m(".main", [
-			m("#packages-start", [
+			m("#plugins-start", [
 				m(".content", [
-					m("h2", "Popular packages"),
+					m("h2", "Popular plugins"),
 					m(".focusbox", [
 						m(".focusbox-third.focusbox-icon", [
 							m("h4", m("a[href=#/]", "Restaurant")),
 							m(".description", "Search for restaurants nearby using Yelp. Find reviews, menus, and more."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_restaurants]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -190,7 +190,7 @@ abot.Packages.view = function(ctrl) {
 							m(".description", "Fix a broken car with searches for nearby mechanics."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_mechanic]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -200,7 +200,7 @@ abot.Packages.view = function(ctrl) {
 							m(".description", "Add support for credit card purchasing via Stripe."),
 							m(".link", [
 								m("a[href=https://github.com/itsabot/pkg_purchase]", [
-									"View package ",
+									"View plugin ",
 									m.trust("&raquo;"),
 								]),
 							]),
@@ -209,20 +209,20 @@ abot.Packages.view = function(ctrl) {
 				]),
 				m(".content", [
 					m("h2", "Getting started"),
-					m(".paragraph", m("a[href=/packages/new]", m("strong", [
-						"Add your package to itsabot.org ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=/plugins/new]", m("strong", [
+						"Add your plugin to itsabot.org ", m.trust("&raquo;")
 					]))),
-					m("div", "Submit your package to be included in search."),
+					m("div", "Submit your plugin to be included in search."),
 
-					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Building-a-Package]", m("strong", [
-						"Build a package ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Building-a-Plugin]", m("strong", [
+						"Build a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn how to build packages with branching dialog, complex states, and more."),
+					m("div", "Learn how to build plugins with branching dialog, complex states, and more."),
 
-					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Package-Manager]", m("strong", [
-						"Integrate a package ", m.trust("&raquo;")
+					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager]", m("strong", [
+						"Integrate a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn to use abotp, our package manager, to add packages to your Abot."),
+					m("div", "Learn to use abotp, our plugin manager, to add plugins to your Abot."),
 				]),
 			]),
 			m("#search-results.hidden", [
@@ -242,8 +242,8 @@ abot.Packages.view = function(ctrl) {
 }
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
-abot.PackagesNew = {}
-abot.PackagesNew.controller = function() {
+abot.PluginsNew = {}
+abot.PluginsNew.controller = function() {
 	var ctrl = this
 	ctrl.submit = function(ev) {
 		ev.preventDefault()
@@ -254,7 +254,7 @@ abot.PackagesNew.controller = function() {
 		var r = document.getElementById("reponame").value
 		m.request({
 			method: "POST",
-			url: window.location.origin + "/api/packages.json",
+			url: window.location.origin + "/api/plugins.json",
 			data: {
 				Path: "github.com/" + u + "/" + r,
 			}
@@ -272,13 +272,13 @@ abot.PackagesNew.controller = function() {
 		})
 	}
 }
-abot.PackagesNew.view = function(ctrl) {
+abot.PluginsNew.view = function(ctrl) {
 	return m("div", [
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Add package"),
-				m("p", "Manually add to or update a package in the itsabot.org index, so it's searchable. You can add any package on Github."),
+				m("h1", "Add plugin"),
+				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin on Github."),
 				m("p", [
 					"Currently only repos hosted on Github are supported. If you'd like to support another hosting service, please ",
 					m("a[href=https://github.com/itsabot/abot/wiki/How-to-Contribute]", "contribute."),
@@ -287,8 +287,8 @@ abot.PackagesNew.view = function(ctrl) {
 					m(".content", [
 						m("#alert-success.alert.alert-success.hidden", [
 							m("strong", "Success!"),
-							" Added the package to itsabot.org. ",
-							m("a[href=/packages]", "Go back to packages."), 
+							" Added the plugin to itsabot.org. ",
+							m("a[href=/plugins]", "Go back to plugins."), 
 						]),
 						m("#alert-error.alert.alert-error.hidden", [
 							m("strong", "Error! "),
@@ -314,7 +314,7 @@ abot.PackagesNew.view = function(ctrl) {
 						}),
 					]),
 					m(".form-el", [
-						m("button[type=submit]#submit-btn", "Add package")
+						m("button[type=submit]#submit-btn", "Add plugin")
 					]),
 				]),
 			]),
@@ -333,7 +333,7 @@ abot.Searchbar.controller = function(pctrl) {
 		ev.preventDefault()
 		var input = ev.target.children[0]
 		if (input.value.length === 0) {
-			document.getElementById("packages-start").classList.remove("hidden")
+			document.getElementById("plugins-start").classList.remove("hidden")
 			document.getElementById("search-results").classList.add("hidden")
 			return
 		}
@@ -342,7 +342,7 @@ abot.Searchbar.controller = function(pctrl) {
 			url: window.location.origin + "/api/search.json?q=" + input.value
 		}).then(function(res) {
 			document.getElementById("search-results").classList.remove("hidden")
-			document.getElementById("packages-start").classList.add("hidden")
+			document.getElementById("plugins-start").classList.add("hidden")
 			res = res || []
 			pctrl.props.results(res)
 		}, function(err) {
@@ -355,7 +355,7 @@ abot.Searchbar.view = function(ctrl) {
 		m(".main", [
 			m("form", { onsubmit: ctrl.search }, [
 				m("input[type=text]#searchbar-input", {
-					placeholder: "Find packages",
+					placeholder: "Find plugins",
 					config: ctrl.focus,
 				}),
 				m("button[type=submit]", m(".search", m.trust("&#9906;"))),
@@ -374,8 +374,8 @@ abot.SearchResult.view = function(_, pctrl) {
 					return m("tr", {
 						style: "border-bottom: none;"
 					}, m("td", [
-						"No results found. If you don't see your package, you can ",
-						m("a[href=/packages/new]", "add it here."),
+						"No results found. If you don't see your plugin, you can ",
+						m("a[href=/plugins/new]", "add it here."),
 					]))
 				} else {
 					return pctrl.props.results().map(function(item) {

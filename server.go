@@ -42,8 +42,8 @@ func main() {
 	e.Static("/public/js", "public/js")
 	e.Static("/public/images", "assets/images")
 	e.Get("/*", handlerIndex)
-	e.Get("/api/search.json", handlerAPIPackagesSearch)
-	e.Post("/api/packages.json", handlerAPIPackagesCreate)
+	e.Get("/api/search.json", handlerAPIPluginsSearch)
+	e.Post("/api/plugins.json", handlerAPIPluginsCreate)
 	if len(os.Getenv("ITSABOT_PORT")) > 0 {
 		e.Run(":" + os.Getenv("ITSABOT_PORT"))
 	} else {
@@ -72,7 +72,7 @@ func handlerIndex(c *echo.Context) error {
 	return nil
 }
 
-func handlerAPIPackagesSearch(c *echo.Context) error {
+func handlerAPIPluginsSearch(c *echo.Context) error {
 	term := c.Query("q")
 	if len(term) < 3 {
 		return nil
@@ -88,10 +88,10 @@ func handlerAPIPackagesSearch(c *echo.Context) error {
 	}
 	q := `SELECT id, name, username, description, readme, downloadcount, similarity((
 		SELECT concat(name, username, description, readme)
-		FROM packages AS ft
-		WHERE id=packages.id), $1
+		FROM plugins AS ft
+		WHERE id=plugins.id), $1
 	      ) AS sml
-	      FROM packages
+	      FROM plugins
 	      ORDER BY sml DESC, downloadcount DESC
 	      LIMIT 10`
 	if err := db.Select(&res, q, term); err != nil {
@@ -113,7 +113,7 @@ func handlerAPIPackagesSearch(c *echo.Context) error {
 	return nil
 }
 
-func handlerAPIPackagesCreate(c *echo.Context) error {
+func handlerAPIPluginsCreate(c *echo.Context) error {
 	var inc struct {
 		Path string
 	}
@@ -131,8 +131,8 @@ func handlerAPIPackagesCreate(c *echo.Context) error {
 	_, username := path.Split(base[:len(base)-1])
 
 	// Ensure we don't spam Github with requests in line with their API
-	// limit. Only fetch package updates once per day.
-	q := `SELECT createdat, updatedat FROM packages WHERE name=$1`
+	// limit. Only fetch plugin updates once per day.
+	q := `SELECT createdat, updatedat FROM plugins WHERE name=$1`
 	var times struct {
 		CreatedAt *time.Time
 		UpdatedAt *time.Time
@@ -152,12 +152,12 @@ func handlerAPIPackagesCreate(c *echo.Context) error {
 	}
 
 	// Insert the results into the DB
-	q = `INSERT INTO packages (name, username, description, readme, downloadcount)
+	q = `INSERT INTO plugins (name, username, description, readme, downloadcount)
 	     VALUES ($1, $2, $3, $4, 1)
 	     ON CONFLICT (name) DO UPDATE SET
 		description=$3,
 		readme=$4,
-		downloadcount=packages.downloadcount+1,
+		downloadcount=plugins.downloadcount+1,
 		updatedat=CURRENT_TIMESTAMP`
 	_, err = db.Exec(q, inc.Path, username, desc, readme)
 	if err != nil {

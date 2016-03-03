@@ -1,6 +1,6 @@
 (function(abot) {
-abot.PackagesNew = {}
-abot.PackagesNew.controller = function() {
+abot.PluginsNew = {}
+abot.PluginsNew.controller = function() {
 	var ctrl = this
 	ctrl.submit = function(ev) {
 		ev.preventDefault()
@@ -11,7 +11,7 @@ abot.PackagesNew.controller = function() {
 		var r = document.getElementById("reponame").value
 		m.request({
 			method: "POST",
-			url: window.location.origin + "/api/packages.json",
+			url: window.location.origin + "/api/plugins.json",
 			data: {
 				Path: "github.com/" + u + "/" + r,
 			}
@@ -29,13 +29,13 @@ abot.PackagesNew.controller = function() {
 		})
 	}
 }
-abot.PackagesNew.view = function(ctrl) {
+abot.PluginsNew.view = function(ctrl) {
 	return m("div", [
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Add package"),
-				m("p", "Manually add to or update a package in the itsabot.org index, so it's searchable. You can add any package on Github."),
+				m("h1", "Add plugin"),
+				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin on Github."),
 				m("p", [
 					"Currently only repos hosted on Github are supported. If you'd like to support another hosting service, please ",
 					m("a[href=https://github.com/itsabot/abot/wiki/How-to-Contribute]", "contribute."),
@@ -44,8 +44,8 @@ abot.PackagesNew.view = function(ctrl) {
 					m(".content", [
 						m("#alert-success.alert.alert-success.hidden", [
 							m("strong", "Success!"),
-							" Added the package to itsabot.org. ",
-							m("a[href=/packages]", "Go back to packages."), 
+							" Added the plugin to itsabot.org. ",
+							m("a[href=/plugins]", "Go back to plugins."), 
 						]),
 						m("#alert-error.alert.alert-error.hidden", [
 							m("strong", "Error! "),
@@ -71,7 +71,7 @@ abot.PackagesNew.view = function(ctrl) {
 						}),
 					]),
 					m(".form-el", [
-						m("button[type=submit]#submit-btn", "Add package")
+						m("button[type=submit]#submit-btn", "Add plugin")
 					]),
 				]),
 			]),

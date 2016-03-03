@@ -4,8 +4,8 @@ window.addEventListener("load", function() {
 	m.route(document.body, "/", {
 		"/": abot.Index,
 		"/guides": abot.Guides,
-		"/packages": abot.Packages,
-		"/packages/new": abot.PackagesNew,
+		"/plugins": abot.Plugins,
+		"/plugins/new": abot.PluginsNew,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
