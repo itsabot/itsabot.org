@@ -25,10 +25,12 @@ header .header-content {
 	max-width: 960px;
 	margin: 0 auto;
 }
-@media(max-width: 540px) {
+@media(max-width: 960px) {
 	header .logo {
 		margin-left: 1em;
 	}
+}
+@media(max-width: 540px) {
 	header .hidden-small {
 		display: none;
 	}
