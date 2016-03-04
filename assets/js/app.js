@@ -5,7 +5,7 @@ window.addEventListener("load", function() {
 		"/": abot.Index,
 		"/guides": abot.Guides,
 		"/plugins": abot.Plugins,
-		"/plugins/new": abot.PluginsNew,
+		"/plugins/new": abot.PluginsNew
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
