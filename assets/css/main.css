@@ -17,8 +17,3 @@ body {
 .hidden {
 	display: none;
 }
-@media(max-width: 540px) {
-	.hidden-small {
-		display: none;
-	}
-}

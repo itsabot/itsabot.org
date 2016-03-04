@@ -25,8 +25,11 @@ header .header-content {
 	max-width: 960px;
 	margin: 0 auto;
 }
-@media(max-width: 650px) {
-	.logo {
+@media(max-width: 540px) {
+	header .logo {
 		margin-left: 1em;
+	}
+	header .hidden-small {
+		display: none;
 	}
 }
