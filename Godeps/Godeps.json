@@ -1,10 +1,14 @@
 {
-	"ImportPath": "itsabot.org/itsabot",
+	"ImportPath": "github.com/itsabot/itsabot",
 	"GoVersion": "go1.6",
 	"Packages": [
-		"./..."
+		"."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/itsabot/abot/shared/log",
+			"Rev": "881a43d8fbe3534af8ba759ebffe0635233fc4d9"
+		},
 		{
 			"ImportPath": "github.com/jmoiron/sqlx",
 			"Comment": "sqlx-v1.1-58-g5978a4e",
@@ -37,10 +41,6 @@
 		{
 			"ImportPath": "github.com/mattn/go-isatty",
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
-		},
-		{
-			"ImportPath": "golang.org/x/crypto/ssh/terminal",
-			"Rev": "1f22c0103821b9390939b6776727195525381532"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

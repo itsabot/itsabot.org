@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -15,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/itsabot/abot/shared/log"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
 	mw "github.com/labstack/echo/middleware"
@@ -31,12 +31,13 @@ func main() {
 	var err error
 	tmplLayout, err = template.ParseFiles("assets/html/layout.html")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	db, err = connectDB()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
+	log.SetDebug(true)
 	e := echo.New()
 	e.Use(mw.Logger(), mw.Gzip(), mw.Recover())
 	e.SetDebug(os.Getenv("ITSABOT_ENV") != "production")
@@ -59,17 +60,17 @@ func handlerIndex(c *echo.Context) error {
 		var err error
 		tmplLayout, err = template.ParseFiles("assets/html/layout.html")
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 	}
 	var s []byte
 	b := bytes.NewBuffer(s)
 	if err := tmplLayout.Execute(b, nil); err != nil {
-		log.Println(err)
+		log.Debug(err)
 		return err
 	}
 	if err := c.HTML(http.StatusOK, string(b.Bytes())); err != nil {
-		log.Println(err)
+		log.Debug(err)
 		return err
 	}
 	return nil
@@ -225,7 +226,7 @@ func fetchFromGithub(username, reponame string) (desc string, readme []byte,
 func handlerAPIWeatherSearch(c *echo.Context) error {
 	city := c.Query("city")
 	if len(city) == 0 {
-		return errors.New("city param must be included")
+		return jsonError(errors.New("city param must be included"))
 	}
 	var req struct {
 		Weather []struct {
@@ -236,16 +237,17 @@ func handlerAPIWeatherSearch(c *echo.Context) error {
 			Humidity int     `json:"humidity"`
 		}
 	}
+	log.Debug("searching for city", city)
 	res, err := http.Get(fmt.Sprintf("%s%s&appid=%s", apiWeatherURL, city,
 		os.Getenv("OPEN_WEATHER_MAP_API_KEY")))
 	if err != nil {
-		return err
+		return jsonError(err)
 	}
 	if err = json.NewDecoder(res.Body).Decode(&req); err != nil {
-		return err
+		return jsonError(err)
 	}
 	if err = res.Body.Close(); err != nil {
-		return err
+		return jsonError(err)
 	}
 	desc := []string{}
 	for _, w := range req.Weather {
@@ -261,7 +263,7 @@ func handlerAPIWeatherSearch(c *echo.Context) error {
 		Humidity:    req.Main.Humidity,
 	}
 	if err = c.JSON(http.StatusOK, resp); err != nil {
-		return err
+		return jsonError(err)
 	}
 	return nil
 }
@@ -283,7 +285,7 @@ func connectDB() (*sqlx.DB, error) {
 			"user=postgres dbname=itsabot sslmode=disable")
 	}
 	if err != nil {
-		log.Println(err)
+		log.Debug(err)
 	}
 	return db, err
 }
