@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -24,6 +25,7 @@ var tmplLayout *template.Template
 var db *sqlx.DB
 
 const apiURL = "https://api.github.com/"
+const apiWeatherURL = "http://api.openweathermap.org/data/2.5/weather?units=imperial&q="
 
 func main() {
 	var err error
@@ -44,6 +46,7 @@ func main() {
 	e.Get("/*", handlerIndex)
 	e.Get("/api/search.json", handlerAPIPluginsSearch)
 	e.Post("/api/plugins.json", handlerAPIPluginsCreate)
+	e.Get("/api/weather.json", handlerAPIWeatherSearch)
 	if len(os.Getenv("ITSABOT_PORT")) > 0 {
 		e.Run(":" + os.Getenv("ITSABOT_PORT"))
 	} else {
@@ -215,6 +218,52 @@ func fetchFromGithub(username, reponame string) (desc string, readme []byte,
 		}
 	}
 	return desc, readme, nil
+}
+
+// handlerAPIWeatherSearch handles basic weather searching without requiring an
+// API key for demo purposes.
+func handlerAPIWeatherSearch(c *echo.Context) error {
+	city := c.Query("city")
+	if len(city) == 0 {
+		return errors.New("city param must be included")
+	}
+	var req struct {
+		Weather []struct {
+			Description string `json:"description"`
+		} `json:"weather"`
+		Main struct {
+			Temp     float64 `json:"temp"`
+			Humidity int     `json:"humidity"`
+		}
+	}
+	res, err := http.Get(fmt.Sprintf("%s%s&appid=%s", apiWeatherURL, city,
+		os.Getenv("OPEN_WEATHER_MAP_API_KEY")))
+	if err != nil {
+		return err
+	}
+	if err = json.NewDecoder(res.Body).Decode(&req); err != nil {
+		return err
+	}
+	if err = res.Body.Close(); err != nil {
+		return err
+	}
+	desc := []string{}
+	for _, w := range req.Weather {
+		desc = append(desc, w.Description)
+	}
+	resp := struct {
+		Description []string
+		Temp        float64
+		Humidity    int
+	}{
+		Description: desc,
+		Temp:        req.Main.Temp,
+		Humidity:    req.Main.Humidity,
+	}
+	if err = c.JSON(http.StatusOK, resp); err != nil {
+		return err
+	}
+	return nil
 }
 
 // jsonError builds a simple JSON message from an error type in the format of
