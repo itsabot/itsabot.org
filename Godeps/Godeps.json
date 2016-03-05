@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/itsabot/itsabot",
 	"GoVersion": "go1.6",
-	"Packages": [
-		"."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/itsabot/abot/shared/log",
