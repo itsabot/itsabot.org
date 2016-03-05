@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -238,6 +239,7 @@ func handlerAPIWeatherSearch(c *echo.Context) error {
 		}
 	}
 	log.Debug("searching for city", city)
+	city = url.QueryEscape(city)
 	res, err := http.Get(fmt.Sprintf("%s%s&appid=%s", apiWeatherURL, city,
 		os.Getenv("OPEN_WEATHER_MAP_API_KEY")))
 	if err != nil {
