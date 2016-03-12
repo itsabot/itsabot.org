@@ -24,8 +24,28 @@ abot.Guides.view = function() {
 					]),
 					m("li", [
 						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Building-a-Plugin",
+						}, "Building a Plugin"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Adding-SMS-Messaging-to-Abot",
+						}, "Adding SMS Messaging"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager",
+						}, "Using the Plugin Manager"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Getting-Started#deploying-your-abot",
+						}, "Deploying to Heroku"),
+					]),
+					m("li", [
+						m("a", {
 							href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
-						}, "Contributing"),
+						}, "How to Contribute"),
 					]),
 				])
 			])
