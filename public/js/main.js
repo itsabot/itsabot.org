@@ -2186,8 +2186,28 @@ abot.Guides.view = function() {
 					]),
 					m("li", [
 						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Building-a-Plugin",
+						}, "Building a Plugin"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Adding-SMS-Messaging-to-Abot",
+						}, "Adding SMS Messaging"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager",
+						}, "Using the Plugin Manager"),
+					]),
+					m("li", [
+						m("a", {
+							href: "https://github.com/itsabot/abot/wiki/Getting-Started#deploying-your-abot",
+						}, "Deploying to Heroku"),
+					]),
+					m("li", [
+						m("a", {
 							href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
-						}, "Contributing"),
+						}, "How to Contribute"),
 					]),
 				])
 			])
@@ -2241,7 +2261,7 @@ abot.Index.view = function() {
 					m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
 					m(".btn-container", [
 						m("a[href=https://github.com/itsabot/abot].btn", "Download the latest version"),
-						m("div", m(".subtle", "Pre-alpha, version 0.0.1")),
+						m("div", m(".subtle", "Version 0.1.0")),
 					]),
 					m("img[src=/public/images/abot_set.png]"),
 				]),
