@@ -7,7 +7,7 @@ abot.Guides.view = function() {
 			m(".content", [
 				m("h1", "Guides"),
 				m("p", [
-					"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightfue as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
+					"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightful as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
 				]),
 				m("p", [
 					"Interested in contributing a guide? Visit the ",
