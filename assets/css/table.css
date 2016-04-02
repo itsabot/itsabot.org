@@ -1,0 +1,23 @@
+table {
+	width: 100%;
+}
+table thead {
+	font-weight: 600;
+	border-bottom: 1px solid #CCC;
+}
+table tr td {
+	padding: 1em 0.5em;
+}
+table tr td.center {
+	text-align: center;
+}
+table tbody tr:hover {
+	background-color: rgba(73, 185, 251, 0.1);
+}
+table tbody tr td.text {
+	font-size: 13px;
+}
+table small {
+	font-style: italic;
+	color: #aaa;
+}

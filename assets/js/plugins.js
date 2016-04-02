@@ -2,14 +2,27 @@
 abot.Plugins = {}
 abot.Plugins.controller = function() {
 	var ctrl = this
+	ctrl.props = {
+		results: m.prop([]),
+		popular: m.prop([]),
+	}
 	ctrl.clear = function() {
 		document.getElementById("searchbar-input").value = ""
 		document.getElementById("plugins-start").classList.remove("hidden")
 		document.getElementById("search-results").classList.add("hidden")
+		ctrl.props.results(ctrl.props.popular())
 	}
-	ctrl.props = {
-		results: m.prop([])
-	}
+	m.request({
+		method: "GET",
+		url: "/api/plugins/popular.json",
+	}).then(function(data) {
+		if (data != null) {
+			ctrl.props.results(data)
+			ctrl.props.popular(data)
+		}
+	}, function(err) {
+		console.error(err)
+	})
 }
 abot.Plugins.view = function(ctrl) {
 	return m("div", [
@@ -19,38 +32,7 @@ abot.Plugins.view = function(ctrl) {
 			m("#plugins-start", [
 				m(".content", [
 					m("h2", "Popular plugins"),
-					m(".focusbox", [
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Restaurant")),
-							m(".description", "Search for restaurants nearby using Yelp. Find reviews, menus, and more."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_restaurants]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Mechanic")),
-							m(".description", "Fix a broken car with searches for nearby mechanics."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_mechanic]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Purchase")),
-							m(".description", "Add support for credit card purchasing via Stripe."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_purchase]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-					]),
+					m.component(abot.SearchResult, ctrl),
 				]),
 				m(".content", [
 					m("h2", "Getting started"),
@@ -67,7 +49,7 @@ abot.Plugins.view = function(ctrl) {
 					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager]", m("strong", [
 						"Integrate a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn to use abotp, our plugin manager, to add plugins to your Abot."),
+					m("div", "Learn to use the plugin manager to add plugins to your Abot."),
 				]),
 			]),
 			m("#search-results.hidden", [

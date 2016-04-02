@@ -1,7 +1,7 @@
 .btn {
-	color: white;
 	text-align: centered;
-	padding: 1em;
+	margin: 1em 0;
+	padding: 0.5em 1em;
 	font-size: 1em;
 	text-decoration: none;
 	display: inline-block;
@@ -22,4 +22,10 @@
 }
 .btn.clear:hover {
 	opacity: 0.8;
+}
+a.btn-styled {
+	color: inherit;
+	-webkit-appearance: button;
+	-moz-appearance: button;
+	appearance: button;
 }

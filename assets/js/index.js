@@ -10,7 +10,7 @@ abot.Index.view = function() {
 					m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
 					m(".btn-container", [
 						m("a[href=https://github.com/itsabot/abot].btn", "Download the latest version"),
-						m("div", m(".subtle", "Version 0.1.0")),
+						m("div", m(".subtle", "Version 0.2.0-alpha")),
 					]),
 					m("img[src=/public/images/abot_set.png]"),
 				]),

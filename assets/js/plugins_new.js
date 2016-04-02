@@ -1,26 +1,26 @@
 (function(abot) {
 abot.PluginsNew = {}
 abot.PluginsNew.controller = function() {
+	abot.Login.checkAuth(function(loggedIn) {
+		if (!loggedIn) {
+			return m.route("/login")
+		}
+	})
 	var ctrl = this
 	ctrl.submit = function(ev) {
 		ev.preventDefault()
-		document.getElementById("alert-success").classList.add("hidden")
 		var submitBtn = document.getElementById("submit-btn")
 		submitBtn.setAttribute("disabled", true)
-		var u = document.getElementById("username").value
-		var r = document.getElementById("reponame").value
-		m.request({
+		var r = document.getElementById("repourl").value
+		abot.request({
 			method: "POST",
 			url: window.location.origin + "/api/plugins.json",
-			data: {
-				Path: "github.com/" + u + "/" + r,
-			}
-		}).then(function(resp) {
-			console.log(resp)
-			document.getElementById("username").value = ""
-			document.getElementById("reponame").value = ""
-			document.getElementById("alert-success").classList.remove("hidden")
+			data: { Path: r },
+		}).then(function() {
+			document.getElementById("repourl").value = ""
 			submitBtn.removeAttribute("disabled")
+			abot.successFlash("Success! Your plugin will appear here when processed (usually in seconds).")
+			m.route("/profile")
 		}, function(err) {
 			console.error(err)
 			document.getElementById("alert-error").classList.remove("hidden")
@@ -35,18 +35,9 @@ abot.PluginsNew.view = function(ctrl) {
 		m(".main", [
 			m(".content", [
 				m("h1", "Add plugin"),
-				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin on Github."),
-				m("p", [
-					"Currently only repos hosted on Github are supported. If you'd like to support another hosting service, please ",
-					m("a[href=https://github.com/itsabot/abot/wiki/How-to-Contribute]", "contribute."),
-				]),
+				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin available via `go get`."),
 				m("form", { onsubmit: ctrl.submit }, [
 					m(".content", [
-						m("#alert-success.alert.alert-success.hidden", [
-							m("strong", "Success!"),
-							" Added the plugin to itsabot.org. ",
-							m("a[href=/plugins]", "Go back to plugins."), 
-						]),
 						m("#alert-error.alert.alert-error.hidden", [
 							m("strong", "Error! "),
 							m("span#alert-error-content", ""),
@@ -54,28 +45,20 @@ abot.PluginsNew.view = function(ctrl) {
 					]),
 					m(".form-el", [
 						m("div", [
-							m("label[for=username]", "Github username"),
+							m("label[for=repourl]", "`go get` path"),
 						]),
-						m("input[type=text]#username", {
-							name: "username",
-							placeholder: "itsabot",
+						m("input[type=text]#repourl", {
+							name: "repourl",
+							placeholder: "github.com/itsabot/plugin_hello",
 						}),
-					]),
-					m(".form-el", [
 						m("div", [
-							m("label[for=reponame]", "Repository name"),
+							m("button[type=submit]#submit-btn.btn", "Add plugin")
 						]),
-						m("input[type=text]#reponame", {
-							name: "reponame",
-							placeholder: "pkg_restaurants",
-						}),
-					]),
-					m(".form-el", [
-						m("button[type=submit]#submit-btn", "Add plugin")
 					]),
 				]),
 			]),
 		]),
+		m.component(abot.Footer),
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);
