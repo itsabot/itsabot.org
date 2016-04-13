@@ -1,0 +1,1 @@
+ALTER TABLE csrfs ADD PRIMARY KEY (userid);
