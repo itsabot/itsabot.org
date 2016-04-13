@@ -788,3 +788,8 @@ table small {
 	font-style: italic;
 	color: #aaa;
 }
+@media(max-width: 640px) {
+	table .hidden-small {
+		display: none;
+	}
+}
