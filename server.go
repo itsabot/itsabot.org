@@ -217,7 +217,11 @@ func main() {
 		        name=$1,
 			description=$2,
 			downloadcount=plugins.downloadcount+1,
-			updatedat=CURRENT_TIMESTAMP`
+			updatedat=CURRENT_TIMESTAMP,
+			compileok=$5,
+			vetok=$6,
+			testok=$7,
+			error=$8`
 		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
 			inc.Path, inc.userID, compileOK, vetOK, testOK,
 			errMsg)
