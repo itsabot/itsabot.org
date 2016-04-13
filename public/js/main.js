@@ -2853,9 +2853,9 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 			m("thead", [
 				m("tr", [
 					m("td", "Name"),
-					m("td", "Description"),
-					m("td", "Downloads"),
-					m("td", "Errors"),
+					m("td.hidden-small", "Description"),
+					m("td.hidden-small", "Downloads"),
+					m("td.hidden-small", "Errors"),
 				]),
 			]),
 			m("tbody", [
@@ -2865,8 +2865,8 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 							m("div", plugin.Name.String),
 							m("small", plugin.Path),
 						]),
-						m("td", plugin.Description.String),
-						m("td.center", plugin.DownloadCount),
+						m("td.hidden-small", plugin.Description.String),
+						m("td.hidden-small.center", plugin.DownloadCount),
 						function() {
 							var val = []
 							if (!plugin.CompileOK) {
@@ -2881,9 +2881,9 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 							if (val.length === 0) {
 								val.push(m("span.badge.badge-success", "OK!"))
 							}
-							return m("td.badge-container", val)
+							return m("td.badge-container.hidden-small", val)
 						}(),
-						m("td.text", function() {
+						m("td.text.hidden-small", function() {
 							if (plugin.Error != null) {
 								return plugin.Error.String
 							}
