@@ -728,6 +728,11 @@ func handlerAPIUserExpireTokens(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
+	q = `DELETE FROM csrfs WHERE userid=$1`
+	if _, err = db.Exec(q, uid); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -942,8 +947,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 // createCSRFToken creates a new token, invalidating any existing token.
 func createCSRFToken(uid uint64) (token string, err error) {
 	q := `INSERT INTO csrfs (token, userid)
-	      VALUES ($1, $2)
-	      ON CONFLICT (userid) DO UPDATE SET token=$1`
+	      VALUES ($1, $2)`
 	token = generateToken(securityTokenLength)
 	if _, err := db.Exec(q, token, uid); err != nil {
 		return "", err
