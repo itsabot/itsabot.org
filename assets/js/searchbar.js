@@ -15,7 +15,7 @@ abot.Searchbar.controller = function(pctrl) {
 		}
 		m.request({
 			method: "GET",
-			url: window.location.origin + "/api/search.json?q=" + input.value
+			url: "/api/plugins/search/" + encodeURI(input.value),
 		}).then(function(res) {
 			document.getElementById("search-results").classList.remove("hidden")
 			document.getElementById("plugins-start").classList.add("hidden")

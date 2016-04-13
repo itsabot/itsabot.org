@@ -1,3 +1,76 @@
+/*\
+ * |*|
+ * |*|  :: cookies.js ::
+ * |*|
+ * |*|  A complete cookies reader/writer framework with full unicode support.
+ * |*|
+ * |*|  Revision #1 - September 4, 2014
+ * |*|
+ * |*|  https://developer.mozilla.org/en-US/docs/Web/API/document.cookie
+ * |*|  https://developer.mozilla.org/User:fusionchess
+ * |*|
+ * |*|  This framework is released under the GNU Public License, version 3 or later.
+ * |*|  http://www.gnu.org/licenses/gpl-3.0-standalone.html
+ * |*|
+ * |*|  Syntaxes:
+ * |*|
+ * |*|  * cookie.setItem(name, value[, end[, path[, domain[, secure]]]])
+ * |*|  * cookie.getItem(name)
+ * |*|  * cookie.removeItem(name[, path[, domain]])
+ * |*|  * cookie.hasItem(name)
+ * |*|  * cookie.keys()
+ * |*|
+ * \*/
+
+var cookie = {
+	getItem: function(sKey) {
+		if (!sKey) {
+			return null;
+		}
+		return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+	},
+	setItem: function(sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+		if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) {
+			return false;
+		}
+		var sExpires = "";
+		if (vEnd) {
+			switch (vEnd.constructor) {
+				case Number:
+					sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+					break;
+				case String:
+					sExpires = "; expires=" + vEnd;
+					break;
+				case Date:
+					sExpires = "; expires=" + vEnd.toUTCString();
+					break;
+			}
+		}
+		document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+		return true;
+	},
+	removeItem: function(sKey, sPath, sDomain) {
+		if (!this.hasItem(sKey)) {
+			return false;
+		}
+		document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "");
+		return true;
+	},
+	hasItem: function(sKey) {
+		if (!sKey) {
+			return false;
+		}
+		return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+	},
+	keys: function() {
+		var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+		for (var nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx++) {
+			aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]);
+		}
+		return aKeys;
+	}
+};
 ;(function (global, factory) { // eslint-disable-line
 	"use strict"
 	/* eslint-disable no-undef */
@@ -2140,6 +2213,41 @@
 	return m
 });
 (function(abot) {
+abot.successFlash = m.prop("")
+abot.isProduction = function() {
+	var ms = document.getElementsByTagName("meta")
+	for (var i = 0; i < ms.length; i++) {
+		if (ms[i].getAttribute("name") === "env-production") {
+			return ms[i].getAttribute("content") === "true"
+		}
+	}
+	return false
+}
+abot.request = function(opts) {
+	opts.config = function(xhr) {
+		xhr.setRequestHeader("Authorization", "Bearer " + cookie.getItem("authToken"))
+		xhr.setRequestHeader("X-CSRF-Token", cookie.getItem("csrfToken"))
+	}
+	return m.request(opts)
+}
+abot.signout = function(ev) {
+	ev.preventDefault()
+	abot.request({
+		url: "/api/users.json",
+		method: "DELETE",
+	}).then(function() {
+		cookie.removeItem("id")
+		cookie.removeItem("email")
+		cookie.removeItem("issuedAt")
+		cookie.removeItem("scopes")
+		cookie.removeItem("csrfToken")
+		cookie.removeItem("authToken")
+		m.route("/login")
+	}, function(err) {
+		console.log(err)
+		console.error(err)
+	})
+}
 window.addEventListener("load", function() {
 	m.route.mode = "pathname"
 	m.route(document.body, "/", {
@@ -2147,6 +2255,9 @@ window.addEventListener("load", function() {
 		"/guides": abot.Guides,
 		"/plugins": abot.Plugins,
 		"/plugins/new": abot.PluginsNew,
+		"/login": abot.Login,
+		"/signup": abot.Signup,
+		"/profile": abot.Profile,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);
@@ -2169,7 +2280,7 @@ abot.Guides.view = function() {
 			m(".content", [
 				m("h1", "Guides"),
 				m("p", [
-					"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightfue as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
+					"Here we'll add guides as they're written. We're also looking for someone to join the core contributor team focused on improving devops and documentation. That contributor will focus on making Abot development as delightful as possible by ensuring we have excellent documentation, easy installation tools, thorough guides, and more."
 				]),
 				m("p", [
 					"Interested in contributing a guide? Visit the ",
@@ -2220,6 +2331,20 @@ abot.Guides.view = function() {
 abot.Header = {}
 abot.Header.view = function(args) {
 	args = args || {}
+	var los;
+	abot.Login.checkAuth(function(loggedIn) {
+		if (loggedIn) {
+			los = [
+				m("a[href=/profile]", { config: m.route }, "Profile"),
+				m("a[href=#/]", { onclick: abot.signout }, "Sign out"),
+			]
+		} else {
+			los = [
+				m("a[href=/login]", { config: m.route }, "Log in"),
+				m("a[href=/signup]", { config: m.route }, "Sign up"),
+			]
+		}
+	})
 	return m("header", [
 		m(".header-content", [
 			m(".links", [
@@ -2238,6 +2363,7 @@ abot.Header.view = function(args) {
 				m("a.hidden-small", {
 					href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
 				}, "Contribute"),
+				los,
 			]),
 			m(".logo", [
 				m("a[href=/]", {
@@ -2261,7 +2387,7 @@ abot.Index.view = function() {
 					m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
 					m(".btn-container", [
 						m("a[href=https://github.com/itsabot/abot].btn", "Download the latest version"),
-						m("div", m(".subtle", "Version 0.1.0")),
+						m("div", m(".subtle", "Version 0.2.0-alpha")),
 					]),
 					m("img[src=/public/images/abot_set.png]"),
 				]),
@@ -2308,17 +2434,152 @@ abot.Index.view = function() {
 }
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
+abot.Login = {}
+abot.Login.controller = function() {
+	var ctrl = this
+	ctrl.login = function(ev) {
+		ev.preventDefault()
+		ctrl.hideError()
+		var email = document.getElementById("email").value
+		var pass = document.getElementById("password").value
+		return m.request({
+			method: "POST",
+			data: {
+				Email: email,
+				Password: pass,
+			},
+			url: "/api/users/login.json",
+		}).then(function(data) {
+			var date = new Date()
+			var exp = date.setDate(date + 30)
+			var secure = true
+			if (!abot.isProduction()) {
+				secure = false
+			}
+			cookie.setItem("id", data.ID, exp, null, null, secure)
+			cookie.setItem("email", data.Email, exp, null, null, secure)
+			cookie.setItem("issuedAt", data.IssuedAt, exp, null, null, secure)
+			cookie.setItem("authToken", data.AuthToken, exp, null, null, secure)
+			cookie.setItem("csrfToken", data.CSRFToken, exp, null, null, secure)
+			cookie.setItem("scopes", data.Scopes, exp, null, null, secure)
+			if (m.route.param("r") == null) {
+				return m.route("/profile")
+			}
+			m.route(decodeURIComponent(m.route.param("r")).substr(1))
+		}, function(err) {
+			ctrl.showError(err.Msg)
+		})
+	}
+	abot.Login.checkAuth(function(loggedIn) {
+		if (loggedIn) {
+			return m.route("/profile")
+		}
+	})
+	ctrl.hideError = function() {
+		ctrl.error("")
+		document.getElementById("err").classList.add("hidden")
+	}
+	ctrl.showError = function(err) {
+		ctrl.error(err)
+		document.getElementById("err").classList.remove("hidden")
+	}
+	ctrl.error = m.prop("")
+}
+abot.Login.view = function(ctrl) {
+	return m("div", [
+		m.component(abot.Header),
+		m(".main", [
+			m(".content", [
+				m("h1", "Log In"),
+				m("div", {
+					id: "err",
+					class: "alert alert-error hidden"
+				}, ctrl.error()),
+				m("form", { onsubmit: ctrl.login }, [
+					m("div", [
+						m("input", {
+							type: "email",
+							id: "email",
+							placeholder: "Email"
+						}),
+					]),
+					m("div", [
+						m("input", {
+							type: "password",
+							id: "password",
+							placeholder: "Password"
+						}),
+					]),
+					m("div", [
+						m("a", {
+							href: "/forgot_password",
+							config: m.route
+						}, "Forgot password?")
+					]),
+					m("div", [
+						m("input", {
+							class: "btn btn-sm",
+							id: "btn",
+							type: "submit",
+							value: "Log In"
+						}),
+					]),
+				]),
+				m("div", [
+					m("span", "No account? "),
+					m("a", {
+						href: "/signup",
+						config: m.route
+					}, "Sign Up"),
+				]),
+			]),
+		]),
+		m.component(abot.Footer),
+	])
+}
+abot.Login.checkAuth = function(callback) {
+	var id = cookie.getItem("id")
+	var issuedAt = cookie.getItem("issuedAt")
+	var email = cookie.getItem("email")
+	if (id != null && id !== "undefined" && id !== "null" &&
+		issuedAt != null && issuedAt !== "undefined" && issuedAt !== "null" &&
+		email != null && email !== "undefined" && issuedAt !== "null") {
+		return callback(true)
+	}
+	cookie.setItem("id", null)
+	cookie.setItem("issuedAt", null)
+	cookie.setItem("email", null)
+	cookie.setItem("scopes", null)
+	cookie.setItem("authToken", null)
+	cookie.setItem("csrfToken", null)
+	return callback(false)
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
 abot.Plugins = {}
 abot.Plugins.controller = function() {
 	var ctrl = this
+	ctrl.props = {
+		results: m.prop([]),
+		popular: m.prop([]),
+	}
 	ctrl.clear = function() {
 		document.getElementById("searchbar-input").value = ""
 		document.getElementById("plugins-start").classList.remove("hidden")
 		document.getElementById("search-results").classList.add("hidden")
+		ctrl.props.results(ctrl.props.popular())
 	}
-	ctrl.props = {
-		results: m.prop([])
-	}
+	m.request({
+		method: "GET",
+		url: "/api/plugins/popular.json",
+	}).then(function(data) {
+		if (data != null) {
+			ctrl.props.results(data)
+			ctrl.props.popular(data)
+		}
+	}, function(err) {
+		console.error(err)
+	})
 }
 abot.Plugins.view = function(ctrl) {
 	return m("div", [
@@ -2328,38 +2589,7 @@ abot.Plugins.view = function(ctrl) {
 			m("#plugins-start", [
 				m(".content", [
 					m("h2", "Popular plugins"),
-					m(".focusbox", [
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Restaurant")),
-							m(".description", "Search for restaurants nearby using Yelp. Find reviews, menus, and more."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_restaurants]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Mechanic")),
-							m(".description", "Fix a broken car with searches for nearby mechanics."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_mechanic]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-						m(".focusbox-third.focusbox-icon", [
-							m("h4", m("a[href=#/]", "Purchase")),
-							m(".description", "Add support for credit card purchasing via Stripe."),
-							m(".link", [
-								m("a[href=https://github.com/itsabot/pkg_purchase]", [
-									"View plugin ",
-									m.trust("&raquo;"),
-								]),
-							]),
-						]),
-					]),
+					m.component(abot.SearchResult, ctrl),
 				]),
 				m(".content", [
 					m("h2", "Getting started"),
@@ -2376,7 +2606,7 @@ abot.Plugins.view = function(ctrl) {
 					m(".paragraph", m("a[href=https://github.com/itsabot/abot/wiki/Using-the-Plugin-Manager]", m("strong", [
 						"Integrate a plugin ", m.trust("&raquo;")
 					]))),
-					m("div", "Learn to use abotp, our plugin manager, to add plugins to your Abot."),
+					m("div", "Learn to use the plugin manager to add plugins to your Abot."),
 				]),
 			]),
 			m("#search-results.hidden", [
@@ -2398,26 +2628,26 @@ abot.Plugins.view = function(ctrl) {
 (function(abot) {
 abot.PluginsNew = {}
 abot.PluginsNew.controller = function() {
+	abot.Login.checkAuth(function(loggedIn) {
+		if (!loggedIn) {
+			return m.route("/login")
+		}
+	})
 	var ctrl = this
 	ctrl.submit = function(ev) {
 		ev.preventDefault()
-		document.getElementById("alert-success").classList.add("hidden")
 		var submitBtn = document.getElementById("submit-btn")
 		submitBtn.setAttribute("disabled", true)
-		var u = document.getElementById("username").value
-		var r = document.getElementById("reponame").value
-		m.request({
+		var r = document.getElementById("repourl").value
+		abot.request({
 			method: "POST",
 			url: window.location.origin + "/api/plugins.json",
-			data: {
-				Path: "github.com/" + u + "/" + r,
-			}
-		}).then(function(resp) {
-			console.log(resp)
-			document.getElementById("username").value = ""
-			document.getElementById("reponame").value = ""
-			document.getElementById("alert-success").classList.remove("hidden")
+			data: { Path: r },
+		}).then(function() {
+			document.getElementById("repourl").value = ""
 			submitBtn.removeAttribute("disabled")
+			abot.successFlash("Success! Your plugin will appear here when processed (usually in seconds).")
+			m.route("/profile")
 		}, function(err) {
 			console.error(err)
 			document.getElementById("alert-error").classList.remove("hidden")
@@ -2432,18 +2662,9 @@ abot.PluginsNew.view = function(ctrl) {
 		m(".main", [
 			m(".content", [
 				m("h1", "Add plugin"),
-				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin on Github."),
-				m("p", [
-					"Currently only repos hosted on Github are supported. If you'd like to support another hosting service, please ",
-					m("a[href=https://github.com/itsabot/abot/wiki/How-to-Contribute]", "contribute."),
-				]),
+				m("p", "Manually add to or update a plugin in the itsabot.org index, so it's searchable. You can add any plugin available via `go get`."),
 				m("form", { onsubmit: ctrl.submit }, [
 					m(".content", [
-						m("#alert-success.alert.alert-success.hidden", [
-							m("strong", "Success!"),
-							" Added the plugin to itsabot.org. ",
-							m("a[href=/plugins]", "Go back to plugins."), 
-						]),
 						m("#alert-error.alert.alert-error.hidden", [
 							m("strong", "Error! "),
 							m("span#alert-error-content", ""),
@@ -2451,28 +2672,110 @@ abot.PluginsNew.view = function(ctrl) {
 					]),
 					m(".form-el", [
 						m("div", [
-							m("label[for=username]", "Github username"),
+							m("label[for=repourl]", "`go get` path"),
 						]),
-						m("input[type=text]#username", {
-							name: "username",
-							placeholder: "itsabot",
+						m("input[type=text]#repourl", {
+							name: "repourl",
+							placeholder: "github.com/itsabot/plugin_hello",
 						}),
-					]),
-					m(".form-el", [
 						m("div", [
-							m("label[for=reponame]", "Repository name"),
+							m("button[type=submit]#submit-btn.btn", "Add plugin")
 						]),
-						m("input[type=text]#reponame", {
-							name: "reponame",
-							placeholder: "pkg_restaurants",
-						}),
-					]),
-					m(".form-el", [
-						m("button[type=submit]#submit-btn", "Add plugin")
 					]),
 				]),
 			]),
 		]),
+		m.component(abot.Footer),
+	])
+}
+})(!window.abot ? window.abot={} : window.abot);
+(function(abot) {
+abot.Profile = {}
+abot.Profile.controller = function() {
+	abot.Login.checkAuth(function(loggedIn) {
+		if (!loggedIn) {
+			return m.route("/login")
+		}
+	})
+	var ctrl = this
+	ctrl.data = function() {
+		return abot.request({
+			method: "GET",
+			url: "/api/user.json",
+		})
+	}
+	ctrl.showSuccess = function() {
+		var sEl = document.getElementById("success")
+		if (sEl != null && abot.successFlash().length > 0) {
+			sEl.classList.remove("hidden")
+		}
+	}
+	ctrl.hideSuccess = function() {
+		var sEl = document.getElementById("success")
+		if (sEl != null) {
+			sEl.classList.add("hidden")
+		}
+		abot.successFlash("")
+	}
+	ctrl.error = m.prop("")
+	ctrl.hideError = function() {
+		ctrl.error("")
+		var errEl = document.getElementById("err")
+		if (errEl != null) {
+			errEl.classList.add("hidden")
+		}
+	}
+	ctrl.showError = function(err) {
+		ctrl.error(err)
+		var errEl = document.getElementById("err")
+		if (errEl != null) {
+			errEl.classList.remove("hidden")
+		}
+	}
+	ctrl.props = {
+		results: m.prop([]),
+	}
+	var interval
+	ctrl.refresh = function() {
+		ctrl.data().then(function(data) {
+			if (abot.successFlash().length > 0) {
+				if (interval == null) {
+					console.log("scheduling refresh")
+					interval = setInterval(ctrl.refresh, 1500)
+				} else {
+					console.log("clearing interval")
+					clearInterval(interval)
+				}
+			}
+			ctrl.hideError()
+			if (data != null) {
+				ctrl.props.results(data)
+			}
+		}, function(err) {
+			ctrl.showError(err)
+		})
+	}
+	ctrl.refresh()
+}
+abot.Profile.view = function(ctrl) {
+	return m("div", [
+		m.component(abot.Header),
+		m(".main", [
+			m(".content", [
+				m("h1", "Profile - " + cookie.getItem("email")),
+				m("#err", { class: "alert alert-error hidden" }, ctrl.error()),
+				m("h2", "Your plugins"),
+				m("#success", {
+					class: "alert alert-success hidden",
+					config: ctrl.showSuccess,
+				}, abot.successFlash()),
+				m.component(abot.SearchResult, ctrl),
+				m("a[href=/plugins/new].btn.btn-styled", {
+					config: m.route,
+				}, "+ Add plugin"),
+			]),
+		]),
+		m.component(abot.Footer),
 	])
 }
 })(!window.abot ? window.abot={} : window.abot);
@@ -2493,7 +2796,7 @@ abot.Searchbar.controller = function(pctrl) {
 		}
 		m.request({
 			method: "GET",
-			url: window.location.origin + "/api/search.json?q=" + input.value
+			url: "/api/plugins/search/" + encodeURI(input.value),
 		}).then(function(res) {
 			document.getElementById("search-results").classList.remove("hidden")
 			document.getElementById("plugins-start").classList.add("hidden")
@@ -2520,9 +2823,89 @@ abot.Searchbar.view = function(ctrl) {
 })(!window.abot ? window.abot={} : window.abot);
 (function(abot) {
 abot.SearchResult = {}
-abot.SearchResult.view = function(_, pctrl) {
-	return m("li", [
-		m("table", [
+abot.SearchResult.controller = function(pctrl) {
+	var ctrl = this
+	ctrl.deletePlugin = function(id) {
+		abot.request({
+			method: "DELETE",
+			url: "/api/plugins.json",
+			data: { PluginID: id },
+		}).then(function() {
+			m.route("/profile")
+		}, function(err) {
+			console.error(err)
+		})
+	}
+}
+abot.SearchResult.view = function(ctrl, pctrl) {
+	return function() {
+		if (pctrl.props.results().length === 0) {
+			return m("table", [
+				m("tr", {
+					style: "border-bottom: none;"
+				}, m("td", [
+					"No results found. If you don't see your plugin, you can ",
+					m("a[href=/plugins/new]", "add it here."),
+				]))
+			])
+		}
+		return m("table", [
+			m("thead", [
+				m("tr", [
+					m("td", "Name"),
+					m("td", "Description"),
+					m("td", "Downloads"),
+					m("td", "Errors"),
+				]),
+			]),
+			m("tbody", [
+				pctrl.props.results().map(function(plugin) {
+					return m("tr", [
+						m("td", [
+							m("div", plugin.Name.String),
+							m("small", plugin.Path),
+						]),
+						m("td", plugin.Description.String),
+						m("td.center", plugin.DownloadCount),
+						function() {
+							var val = []
+							if (!plugin.CompileOK) {
+								val.push(m("span.badge.badge-error", "go get"))
+							}
+							if (!plugin.VetOK) {
+								val.push(m("span.badge.badge-error", "go vet"))
+							}
+							if (!plugin.TestOK) {
+								val.push(m("span.badge.badge-error", "go test"))
+							}
+							if (val.length === 0) {
+								val.push(m("span.badge.badge-success", "OK!"))
+							}
+							return m("td.badge-container", val)
+						}(),
+						m("td.text", function() {
+							if (plugin.Error != null) {
+								return plugin.Error.String
+							}
+							return ""
+						}),
+						m("td", function(plugin) {
+							if (!plugin.Name.Valid) {
+								return m("button", {
+									onclick: ctrl.deletePlugin.bind(undefined, plugin.ID),
+								}, "Remove")
+							}
+						}(plugin)),
+					])
+				}),
+			]),
+		])
+	}()
+}
+})(!window.abot ? window.abot={} : window.abot);
+
+/*
+m("table", [
 			function() {
 				if (pctrl.props.results().length === 0) {
 					return m("tr", {
@@ -2547,6 +2930,100 @@ abot.SearchResult.view = function(_, pctrl) {
 					})
 				}
 			}()
+		]),
+		*/
+(function(abot) {
+abot.Signup = {}
+abot.Signup.controller = function() {
+	var ctrl = this
+	abot.Login.checkAuth(function(cb) {
+		if (cb) {
+			return m.route("/profile")
+		}
+	})
+	ctrl.props = {
+		error: m.prop("")
+	}
+	ctrl.signup = function(ev) {
+		ev.preventDefault()
+		var email = document.getElementById("email").value
+		var pass = document.getElementById("password").value
+		return m.request({
+			method: "POST",
+			data: {
+				Email: email,
+				Password: pass,
+			},
+			url: "/api/users.json"
+		}).then(function(data) {
+			console.log("here")
+			var date = new Date()
+			var exp = date.setDate(date + 30)
+			var secure = true
+			if (!abot.isProduction()) {
+				secure = false
+			}
+			console.log("here2")
+			cookie.setItem("id", data.ID, exp, null, null, secure)
+			cookie.setItem("email", data.Email, exp, null, null, secure)
+			cookie.setItem("issuedAt", data.IssuedAt, exp, null, null, secure)
+			cookie.setItem("authToken", data.AuthToken, exp, null, null, secure)
+			cookie.setItem("csrfToken", data.CSRFToken, exp, null, null, secure)
+			cookie.setItem("scopes", data.Scopes, exp, null, null, secure)
+			console.log("here3")
+			m.route("/profile")
+			console.log("routed to profile")
+		}, function(err) {
+			console.log("error", err)
+			ctrl.props.error(err.Msg)
+		})
+	}
+}
+abot.Signup.view = function(ctrl) {
+	var errMsg = null
+	if (!!ctrl.props.error()) {
+		errMsg = m(".alert.alert-error", ctrl.props.error())
+	}
+	return m("div", [
+		m.component(abot.Header),
+		m(".main", [
+			m(".content", [
+				m("h1", "Sign Up"),
+				m("form", { onsubmit: ctrl.signup }, [
+					errMsg,
+					m("div", [
+						m("input", {
+							type: "email",
+							class: "form-control",
+							id: "email",
+							placeholder: "Email"
+						})
+					]),
+					m("div", [
+						m("input", {
+							type: "password",
+							class: "form-control",
+							id: "password",
+							placeholder: "Password"
+						})
+					]),
+					m("div", [
+						m("input", {
+							class: "btn btn-sm",
+							id: "btn",
+							type: "submit",
+							value: "Sign Up"
+						})
+					]),
+					m("div", [
+						m("span", "Have an account? "),
+						m("a", {
+							href: "/login",
+							config: m.route
+						}, "Log In")
+					]),
+				]),
+			]),
 		]),
 	])
 }

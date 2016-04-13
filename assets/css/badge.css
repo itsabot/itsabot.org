@@ -1,0 +1,16 @@
+.badge {
+	padding: 0.5em;
+	color: white;
+	margin-right: 0.5em;
+}
+.badge.badge-success {
+	background-color: #3C763D;
+}
+.badge.badge-error {
+	background-color: #A94442;
+}
+.badge-container {
+	font-size: 13px;
+	overflow-x: auto;
+	white-space: nowrap;
+}

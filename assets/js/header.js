@@ -2,6 +2,20 @@
 abot.Header = {}
 abot.Header.view = function(args) {
 	args = args || {}
+	var los;
+	abot.Login.checkAuth(function(loggedIn) {
+		if (loggedIn) {
+			los = [
+				m("a[href=/profile]", { config: m.route }, "Profile"),
+				m("a[href=#/]", { onclick: abot.signout }, "Sign out"),
+			]
+		} else {
+			los = [
+				m("a[href=/login]", { config: m.route }, "Log in"),
+				m("a[href=/signup]", { config: m.route }, "Sign up"),
+			]
+		}
+	})
 	return m("header", [
 		m(".header-content", [
 			m(".links", [
@@ -20,6 +34,7 @@ abot.Header.view = function(args) {
 				m("a.hidden-small", {
 					href: "https://github.com/itsabot/abot/wiki/How-to-Contribute",
 				}, "Contribute"),
+				los,
 			]),
 			m(".logo", [
 				m("a[href=/]", {

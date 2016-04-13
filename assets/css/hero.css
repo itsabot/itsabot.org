@@ -9,6 +9,8 @@
 	max-width: 100%;
 }
 .hero .btn {
+	color: white;
+	padding: 1em;
 	margin-bottom: 0.5em;
 	border: 3px solid #49B9FB;
 	border-radius: 40px;

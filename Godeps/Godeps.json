@@ -1,59 +1,41 @@
 {
 	"ImportPath": "github.com/itsabot/itsabot",
 	"GoVersion": "go1.6",
+	"Packages": [
+		"."
+	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/itsabot/abot/shared/log",
-			"Rev": "881a43d8fbe3534af8ba759ebffe0635233fc4d9"
+			"ImportPath": "github.com/itsabot/abot/core/log",
+			"Comment": "v0.1.0-63-gbdbc9c7",
+			"Rev": "bdbc9c7d899273153d3e3dc4efd0d763756837e9"
+		},
+		{
+			"ImportPath": "github.com/jeffail/tunny",
+			"Rev": "863db275f4f2273d031c2ce4f4834714e8c10606"
 		},
 		{
 			"ImportPath": "github.com/jmoiron/sqlx",
-			"Comment": "sqlx-v1.1-58-g5978a4e",
-			"Rev": "5978a4ef08e4ddae6983d82b9166353fe21c6600"
+			"Comment": "sqlx-v1.1-61-g398dd58",
+			"Rev": "398dd5876282499cdfd4cb8ea0f31a672abe9495"
 		},
 		{
-			"ImportPath": "github.com/labstack/echo",
-			"Comment": "v1.3-43-g3ba82ac",
-			"Rev": "3ba82ac1ec909764cc9abae5b16b89dce40041ae"
-		},
-		{
-			"ImportPath": "github.com/labstack/gommon/color",
-			"Comment": "v0.0.3-31-g144de14",
-			"Rev": "144de14a2c12710895b37cccf9764476f1ad8b41"
-		},
-		{
-			"ImportPath": "github.com/labstack/gommon/log",
-			"Comment": "v0.0.3-31-g144de14",
-			"Rev": "144de14a2c12710895b37cccf9764476f1ad8b41"
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Comment": "v1.1-29-g77366a4",
+			"Rev": "77366a47451a56bb3ba682481eed85b64fea14e8"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
-			"Comment": "go1.0-cutoff-74-g8ad2b29",
-			"Rev": "8ad2b298cadd691a77015666a5372eae5dbfac8f"
+			"Comment": "go1.0-cutoff-84-g3cd0097",
+			"Rev": "3cd0097429be7d611bb644ef85b42bfb102ceea4"
 		},
 		{
-			"ImportPath": "github.com/mattn/go-colorable",
-			"Rev": "4af63d73f5bea08b682ad2cd198b1e607afd6be0"
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Rev": "c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6"
 		},
 		{
-			"ImportPath": "github.com/mattn/go-isatty",
-			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
-		},
-		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "d513e58596cd55e6f47cd1dcbff6b46035baeccb"
-		},
-		{
-			"ImportPath": "golang.org/x/net/http2",
-			"Rev": "d513e58596cd55e6f47cd1dcbff6b46035baeccb"
-		},
-		{
-			"ImportPath": "golang.org/x/net/websocket",
-			"Rev": "d513e58596cd55e6f47cd1dcbff6b46035baeccb"
-		},
-		{
-			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "eb2c74142fd19a79b3f237334c7384d5167b1b46"
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Rev": "c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6"
 		}
 	]
 }

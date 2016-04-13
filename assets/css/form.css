@@ -3,6 +3,7 @@ form .form-el {
 }
 form input {
 	padding: 0.5em;
+	margin: 0.25em 0;
 }
 form label {
 	font-weight: bold;
