@@ -193,7 +193,6 @@ func main() {
 		} else if err.Error() != "exit status 2" {
 			log.Debug(string(outC))
 			log.Info("failed to run go test", inc.Path, err)
-			goto savePlugin
 		}
 		outC, err = exec.
 			Command("/bin/sh", "-c", "go vet "+inc.Path).
@@ -203,7 +202,6 @@ func main() {
 		} else {
 			log.Debug(string(outC))
 			log.Info("failed to run go vet", inc.Path, err)
-			goto savePlugin
 		}
 
 	savePlugin:
