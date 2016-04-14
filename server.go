@@ -82,6 +82,7 @@ func main() {
 	router.Handle("GET", "/api/plugins/search/:q", handlerAPIPluginsSearch)
 	router.HandlerFunc("GET", "/api/plugins/popular.json", handlerAPIPluginsPopular)
 	router.HandlerFunc("POST", "/api/plugins.json", handlerAPIPluginsCreate)
+	router.HandlerFunc("PUT", "/api/plugins.json", handlerAPIPluginsIncrementCount)
 	router.HandlerFunc("DELETE", "/api/plugins.json", handlerAPIPluginsDelete)
 	router.Handle("GET", "/api/weather/:city", handlerAPIWeatherSearch)
 
@@ -272,6 +273,24 @@ func handlerIndex(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		URL string
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	q := `UPDATE plugins SET downloadcount=plugins.downloadcount+1
+	      WHERE path=$1`
+	_, err := db.Exec(q, req.URL)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	w.WriteHeader(200)
 }
 
 func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
