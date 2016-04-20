@@ -46,7 +46,7 @@ abot.Index.view = function() {
 					m(".focusbox-third", [
 						m("p", [
 							m("h3", "Available everywhere"),
-							"Ava exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
+							"Abot exposes an HTTP API, so you can easily integrate into email, SMS, Twitter, Slack, or however else you want to communicate.",
 						]),
 					]),
 				]),
