@@ -277,15 +277,16 @@ func handlerIndex(w http.ResponseWriter, r *http.Request) {
 
 func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		URL string
+		Path string
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorBadRequest(w, err)
 		return
 	}
+	log.Info("recording download for plugin", req.Path)
 	q := `UPDATE plugins SET downloadcount=plugins.downloadcount+1
 	      WHERE path=$1`
-	_, err := db.Exec(q, req.URL)
+	_, err := db.Exec(q, req.Path)
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
