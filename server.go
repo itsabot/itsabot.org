@@ -766,16 +766,20 @@ func jsonError(err error) error {
 func connectDB() (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
+	log.Info("connecting to db...")
 	if os.Getenv("ITSABOT_ENV") == "production" {
 		db, err = sqlx.Connect("postgres", os.Getenv("ITSABOT_DATABASE_URL"))
 	} else {
+		log.Debug("ITSABOT_DATABASE_URL not set. using defaults")
 		db, err = sqlx.Connect("postgres",
 			"user=postgres dbname=itsabot sslmode=disable")
 	}
 	if err != nil {
-		log.Debug(err)
+		log.Info("failed to connect to db.", err)
+		return db, err
 	}
-	return db, err
+	log.Info("connected to db")
+	return db, nil
 }
 
 // This is based on a StackOverflow answer here:
