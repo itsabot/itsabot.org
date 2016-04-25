@@ -4,7 +4,7 @@ abot.Signup.controller = function() {
 	var ctrl = this
 	abot.Login.checkAuth(function(cb) {
 		if (cb) {
-			return m.route("/profile")
+			return m.route("/profile", null, true)
 		}
 	})
 	ctrl.props = {
@@ -22,25 +22,21 @@ abot.Signup.controller = function() {
 			},
 			url: "/api/users.json"
 		}).then(function(data) {
-			console.log("here")
 			var date = new Date()
 			var exp = date.setDate(date + 30)
 			var secure = true
 			if (!abot.isProduction()) {
 				secure = false
 			}
-			console.log("here2")
-			cookie.setItem("id", data.ID, exp, null, null, secure)
-			cookie.setItem("email", data.Email, exp, null, null, secure)
-			cookie.setItem("issuedAt", data.IssuedAt, exp, null, null, secure)
-			cookie.setItem("authToken", data.AuthToken, exp, null, null, secure)
-			cookie.setItem("csrfToken", data.CSRFToken, exp, null, null, secure)
-			cookie.setItem("scopes", data.Scopes, exp, null, null, secure)
-			console.log("here3")
-			m.route("/profile")
+			cookie.setItem("iaID", data.ID, exp, null, null, secure)
+			cookie.setItem("iaEmail", data.Email, exp, null, null, secure)
+			cookie.setItem("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
+			cookie.setItem("iaAuthToken", data.AuthToken, exp, null, null, secure)
+			cookie.setItem("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
+			cookie.setItem("iaScopes", data.Scopes, exp, null, null, secure)
+			m.route("/profile", null, true)
 			console.log("routed to profile")
 		}, function(err) {
-			console.log("error", err)
 			ctrl.props.error(err.Msg)
 		})
 	}

@@ -8,7 +8,8 @@ abot.SearchResult.controller = function(pctrl) {
 			url: "/api/plugins.json",
 			data: { PluginID: id },
 		}).then(function() {
-			m.route("/profile")
+			// TODO improve this using m.prop
+			m.route("/profile", null, true)
 		}, function(err) {
 			console.error(err)
 		})
@@ -80,32 +81,3 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 	}()
 }
 })(!window.abot ? window.abot={} : window.abot);
-
-/*
-m("table", [
-			function() {
-				if (pctrl.props.results().length === 0) {
-					return m("tr", {
-						style: "border-bottom: none;"
-					}, m("td", [
-						"No results found. If you don't see your plugin, you can ",
-						m("a[href=/plugins/new]", "add it here."),
-					]))
-				} else {
-					return pctrl.props.results().map(function(item) {
-						var url = "https://" + item.Name
-						return m("tr", [
-							m("td", [
-								m("a[href=" + url + "]", item.Name),
-								" " + item.Username,
-								m(".description", item.Description),
-							]),
-							m("td", [
-								m(".downloads", item.DownloadCount), 
-							]),
-						])
-					})
-				}
-			}()
-		]),
-		*/

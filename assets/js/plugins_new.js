@@ -3,7 +3,7 @@ abot.PluginsNew = {}
 abot.PluginsNew.controller = function() {
 	abot.Login.checkAuth(function(loggedIn) {
 		if (!loggedIn) {
-			return m.route("/login")
+			return m.route("/login", null, true)
 		}
 	})
 	var ctrl = this
@@ -19,8 +19,9 @@ abot.PluginsNew.controller = function() {
 		}).then(function() {
 			document.getElementById("repourl").value = ""
 			submitBtn.removeAttribute("disabled")
+			// TODO improve this with m.prop
 			abot.successFlash("Success! Your plugin will appear here when processed (usually in seconds).")
-			m.route("/profile")
+			m.route("/profile", null, true)
 		}, function(err) {
 			console.error(err)
 			document.getElementById("alert-error").classList.remove("hidden")

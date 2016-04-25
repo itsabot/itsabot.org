@@ -21,23 +21,23 @@ abot.Login.controller = function() {
 			if (!abot.isProduction()) {
 				secure = false
 			}
-			cookie.setItem("id", data.ID, exp, null, null, secure)
-			cookie.setItem("email", data.Email, exp, null, null, secure)
-			cookie.setItem("issuedAt", data.IssuedAt, exp, null, null, secure)
-			cookie.setItem("authToken", data.AuthToken, exp, null, null, secure)
-			cookie.setItem("csrfToken", data.CSRFToken, exp, null, null, secure)
-			cookie.setItem("scopes", data.Scopes, exp, null, null, secure)
+			cookie.setItem("iaID", data.ID, exp, null, null, secure)
+			cookie.setItem("iaEmail", data.Email, exp, null, null, secure)
+			cookie.setItem("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
+			cookie.setItem("iaAuthToken", data.AuthToken, exp, null, null, secure)
+			cookie.setItem("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
+			cookie.setItem("iaScopes", data.Scopes, exp, null, null, secure)
 			if (m.route.param("r") == null) {
-				return m.route("/profile")
+				return m.route("/profile", null, true)
 			}
-			m.route(decodeURIComponent(m.route.param("r")).substr(1))
+			m.route(decodeURIComponent(m.route.param("r")).substr(1), null, true)
 		}, function(err) {
 			ctrl.showError(err.Msg)
 		})
 	}
 	abot.Login.checkAuth(function(loggedIn) {
 		if (loggedIn) {
-			return m.route("/profile")
+			return m.route("/profile", null, true)
 		}
 	})
 	ctrl.hideError = function() {
@@ -103,20 +103,20 @@ abot.Login.view = function(ctrl) {
 	])
 }
 abot.Login.checkAuth = function(callback) {
-	var id = cookie.getItem("id")
-	var issuedAt = cookie.getItem("issuedAt")
-	var email = cookie.getItem("email")
+	var id = cookie.getItem("iaID")
+	var issuedAt = cookie.getItem("iaIssuedAt")
+	var email = cookie.getItem("iaEmail")
 	if (id != null && id !== "undefined" && id !== "null" &&
 		issuedAt != null && issuedAt !== "undefined" && issuedAt !== "null" &&
 		email != null && email !== "undefined" && issuedAt !== "null") {
 		return callback(true)
 	}
-	cookie.setItem("id", null)
-	cookie.setItem("issuedAt", null)
-	cookie.setItem("email", null)
-	cookie.setItem("scopes", null)
-	cookie.setItem("authToken", null)
-	cookie.setItem("csrfToken", null)
+	cookie.setItem("iaID", null)
+	cookie.setItem("iaIssuedAt", null)
+	cookie.setItem("iaEmail", null)
+	cookie.setItem("iaScopes", null)
+	cookie.setItem("iaAuthToken", null)
+	cookie.setItem("iaCSRFToken", null)
 	return callback(false)
 }
 })(!window.abot ? window.abot={} : window.abot);

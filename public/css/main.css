@@ -484,6 +484,12 @@ a.btn-styled {
 	-moz-appearance: button;
 	appearance: button;
 }
+.btn-x {
+	color: red;
+	text-decoration: none;
+	margin-right: 0.5em;
+	font-size: 13px;
+}
 .card {
 	padding: 1em;
 	background-color: #ccc;

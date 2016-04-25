@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha512"
 	"database/sql"
 	"encoding/base64"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,16 +42,28 @@ type Header struct {
 	IssuedAt int64
 }
 
+type Plugin struct {
+	ID            uint64
+	Name          sql.NullString
+	Path          string
+	Description   sql.NullString
+	DownloadCount uint64
+	CompileOK     bool
+	VetOK         bool
+	TestOK        bool
+	Error         sql.NullString
+	UpdatedAt     time.Time
+}
+
+type Token struct {
+	Token     string
+	CreatedAt time.Time
+}
+
 const apiURL = "https://api.github.com/"
 const apiWeatherURL = "http://api.openweathermap.org/data/2.5/weather?units=imperial&q="
-const securityTokenLength = 128
+const securityTokenLength = 48
 const bearerAuthKey = "Bearer"
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const (
-	letterIdxBits = 6                    // 6 bits to represent a letter index
-	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
-	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
-)
 
 func main() {
 	var err error
@@ -77,14 +89,28 @@ func main() {
 	router.HandlerFunc("POST", "/api/users.json", handlerAPIUserCreate)
 	router.HandlerFunc("DELETE", "/api/users.json", handlerAPIUserExpireTokens)
 	router.HandlerFunc("POST", "/api/users/login.json", handlerAPIUserLoginSubmit)
+	router.HandlerFunc("GET", "/api/users/auth_tokens.json", handlerAPIAuthTokens)
+	router.HandlerFunc("POST", "/api/users/auth_token.json", handlerAPIAuthTokenGenerate)
+	router.HandlerFunc("DELETE", "/api/users/auth_token.json", handlerAPIAuthTokenDelete)
 
 	// Plugin routes
+	router.Handle("GET", "/api/plugins/by_name/:name", handlerAPIPluginsByName)
 	router.Handle("GET", "/api/plugins/search/:q", handlerAPIPluginsSearch)
 	router.HandlerFunc("GET", "/api/plugins/popular.json", handlerAPIPluginsPopular)
 	router.HandlerFunc("POST", "/api/plugins.json", handlerAPIPluginsCreate)
 	router.HandlerFunc("PUT", "/api/plugins.json", handlerAPIPluginsIncrementCount)
 	router.HandlerFunc("DELETE", "/api/plugins.json", handlerAPIPluginsDelete)
 	router.Handle("GET", "/api/weather/:city", handlerAPIWeatherSearch)
+
+	// Training routes
+	router.Handle("GET", "/api/plugins/train/:id", handlerAPIPluginsTrainings)
+	router.HandlerFunc("POST", "/api/plugins/train.json", handlerAPIPluginsTrain)
+	router.HandlerFunc("PUT", "/api/plugins/train.json", handlerAPIPluginsTrainUpdate)
+	router.HandlerFunc("DELETE", "/api/plugins/train.json", handlerAPIPluginsTrainDelete)
+	router.Handle("POST", "/api/plugins/test_auth.json", handlerAPIPluginsTestAuth)
+	router.HandlerFunc("OPTIONS", "/api/plugins/train/:pluginName", handlerAPIOptionsTrainings)
+	router.HandlerFunc("OPTIONS", "/api/plugins/train.json", handlerAPIOptionsTrain)
+	router.HandlerFunc("OPTIONS", "/api/plugins/test_auth.json", handlerAPIOptionsTrain)
 
 	// Create a worker pool to process and test plugins
 	pool, err = tunny.CreatePool(runtime.NumCPU(), func(object interface{}) interface{} {
@@ -240,6 +266,7 @@ func main() {
 		}
 	}()
 
+	log.Info("booted server")
 	if len(os.Getenv("ITSABOT_PORT")) > 0 {
 		err = http.ListenAndServe(":"+os.Getenv("ITSABOT_PORT"), router)
 	} else {
@@ -273,6 +300,20 @@ func handlerIndex(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func handlerAPIOptionsTrainings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Methods", "GET")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	w.WriteHeader(http.StatusOK)
+}
+
+func handlerAPIOptionsTrain(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Methods", "POST,PUT,DELETE")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin,X-Auth-Tokens,X-Auth-Plugin-ID")
+	w.WriteHeader(http.StatusOK)
 }
 
 func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
@@ -326,6 +367,31 @@ func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	if _, err = w.Write(byt); err != nil {
 		log.Info("failed to write bytes", err)
 		return
+	}
+}
+
+// handlerAPIPluginsByName enables an Abot to receive plugin IDs for installed
+// plugins. Handling this on plugin install enables Abot to communicate with
+// plugin IDs in all requests that follow, which dramatically improves DB
+// performance.
+func handlerAPIPluginsByName(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
+	plugin := ps.ByName("name")
+	var resp struct{ ID uint64 }
+	q := `SELECT id FROM plugins WHERE name=$1`
+	if err := db.Get(&resp, q, plugin); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	byt, err := json.Marshal(resp)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
 	}
 }
 
@@ -411,7 +477,7 @@ func handlerAPIPluginsCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get userID
-	cookie, err := r.Cookie("id")
+	cookie, err := r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorInternal(w, err)
 		return
@@ -462,7 +528,7 @@ func handlerAPIPluginsDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get userID
-	cookie, err := r.Cookie("id")
+	cookie, err := r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorInternal(w, err)
 		return
@@ -487,9 +553,201 @@ func handlerAPIPluginsDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handlerAPIPluginsTrainings retrieves trained sentences and properties for a
+// given plugin.
+func handlerAPIPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	sentences := []struct {
+		ID       uint64
+		Sentence string
+		Intent   *string
+	}{}
+	q := `SELECT id, sentence, intent FROM trainings
+	     WHERE pluginid=$1
+	     ORDER BY createdat DESC`
+	err := db.Select(&sentences, q, ps.ByName("id"))
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	b, err := json.Marshal(sentences)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(b)
+	if err != nil {
+		log.Info("failed to write response.", err)
+	}
+}
+
+// handlerAPIPluginsTrain trains a plugin on a new sentence or updates the
+// intent of an existing sentence.
+func handlerAPIPluginsTrain(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	pid, ok := authToken(w, r)
+	if !ok {
+		return
+	}
+	log.Info(pid, ok)
+	var req struct {
+		Sentence string
+		Intent   string
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	if len(req.Intent) == 0 {
+		writeErrorBadRequest(w, errors.New("Intent cannot be blank"))
+		return
+	}
+	if len(req.Sentence) == 0 {
+		writeErrorBadRequest(w, errors.New("Sentence cannot be blank"))
+		return
+	}
+
+	q := `INSERT INTO trainings (sentence, intent, pluginid)
+	      VALUES ($1, $2, $3)
+	      ON CONFLICT (sentence, pluginid) DO UPDATE SET intent=$1
+	      RETURNING id`
+	var trainingID uint64
+	err := db.QueryRow(q, req.Sentence, req.Intent, pid).Scan(&trainingID)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+
+	resp := struct {
+		ID       uint64
+		Intent   string
+		Sentence string
+	}{
+		ID:       trainingID,
+		Intent:   req.Intent,
+		Sentence: req.Sentence,
+	}
+	byt, err := json.Marshal(resp)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
+	}
+}
+
+// handlerAPIPluginsTrainUpdate updates a plugin's training sentences.
+func handlerAPIPluginsTrainUpdate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	pid, ok := authToken(w, r)
+	if !ok {
+		return
+	}
+	var req []struct {
+		ID     uint64
+		Intent string
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	tx, err := db.Beginx()
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	var q string
+	for _, s := range req {
+		q = `UPDATE trainings SET intent=$1 WHERE id=$2 AND pluginid=$3`
+		_, err = tx.Exec(q, s.Intent, s.ID, pid)
+		if err != nil {
+			writeErrorInternal(w, err)
+			return
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// handlerAPIPluginsTrainDelete deletes a trained sentence from a plugin.
+func handlerAPIPluginsTrainDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	pid, ok := authToken(w, r)
+	if !ok {
+		return
+	}
+	var req struct{ Sentence string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	q := `DELETE FROM trainings WHERE pluginid=$1 AND sentence=$2`
+	_, err := db.Exec(q, pid, req.Sentence)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// handlerAPIPluginsTestAuth is a helper for testing remote Abot authentication
+// when adding tokens. This handler returns the associated plugin ID for which
+// training may be performed.
+func handlerAPIPluginsTestAuth(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
+	var req struct{ Token string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	var uid uint64
+	q := `SELECT userid FROM authtokens WHERE token=$1`
+	err := db.Get(&uid, q, req.Token)
+	if err == sql.ErrNoRows {
+		writeErrorBadRequest(w, errors.New("Invalid token. Are you sure you copied it correctly?"))
+		return
+	}
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	var resp struct {
+		ID   uint64
+		Name string
+	}
+	q = `SELECT id, name FROM plugins WHERE userid=$1`
+	if err = db.Get(&resp, q, uid); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	byt, err := json.Marshal(resp)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
+	}
+}
+
 // handlerAPIWeatherSearch handles basic weather searching without requiring an
 // API key for demo purposes.
-func handlerAPIWeatherSearch(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func handlerAPIWeatherSearch(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
 	city := ps.ByName("city")
 	if len(city) == 0 {
 		writeErrorBadRequest(w, errors.New("city param must be included"))
@@ -550,23 +808,12 @@ func handlerAPIUserProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	cookie, err := r.Cookie("id")
+	cookie, err := r.Cookie("iaID")
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
-	var plugins []struct {
-		ID            uint64
-		Name          sql.NullString
-		Path          string
-		Description   sql.NullString
-		DownloadCount uint64
-		CompileOK     bool
-		VetOK         bool
-		TestOK        bool
-		Error         sql.NullString
-		UpdatedAt     time.Time
-	}
+	var plugins []Plugin
 	q := `SELECT id, name, path, description, downloadcount, compileok,
 		vetok, testok, error, updatedat
 	      FROM plugins WHERE userid=$1`
@@ -574,7 +821,18 @@ func handlerAPIUserProfile(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
-	byt, err := json.Marshal(plugins)
+	var tokens []Token
+	q = `SELECT token, createdat FROM authtokens WHERE userid=$1
+	     ORDER BY createdat DESC`
+	if err = db.Select(&tokens, q, cookie.Value); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	resp := struct {
+		Plugins []Plugin
+		Tokens  []Token
+	}{Plugins: plugins, Tokens: tokens}
+	byt, err := json.Marshal(resp)
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
@@ -660,6 +918,98 @@ func handlerAPIUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handlerAPIAuthTokens returns all the auth tokens for a given user.
+func handlerAPIAuthTokens(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("ITSABOT_ENV") != "test" {
+		if !loggedIn(w, r) {
+			return
+		}
+	}
+	cookie, err := r.Cookie("iaID")
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	var tokens []string
+	q := `SELECT token FROM authtokens WHERE userid=$1
+	      ORDER BY createdat DESC`
+	if err = db.Get(&tokens, q, cookie.Value); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	byt, err := json.Marshal(&tokens)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
+	}
+}
+
+// handlerAPIAuthTokenGenerate an auth token for authenticating into external
+// services.
+func handlerAPIAuthTokenGenerate(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("ITSABOT_ENV") != "test" {
+		if !loggedIn(w, r) {
+			return
+		}
+	}
+	token, err := generateToken(48)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	cookie, err := r.Cookie("iaID")
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	var t time.Time
+	q := `INSERT INTO authtokens (token, userid) VALUES ($1, $2)
+	      RETURNING createdat`
+	err = db.QueryRow(q, token, cookie.Value).Scan(&t)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	res := struct {
+		Token     string
+		CreatedAt time.Time
+	}{Token: token, CreatedAt: t}
+	byt, err := json.Marshal(res)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
+	}
+}
+
+// handlerAPIAuthTokenDelete deletes an auth token from the DB.
+func handlerAPIAuthTokenDelete(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("ITSABOT_ENV") != "test" {
+		if !loggedIn(w, r) {
+			return
+		}
+	}
+	var req struct{ Token string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	q := `DELETE FROM authtokens WHERE token=$1`
+	_, err := db.Exec(q, req.Token)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // handlerAPIUserCreate creates a new user and a first access token.
 func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -733,7 +1083,7 @@ func handlerAPIUserExpireTokens(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	cookie, err := r.Cookie("id")
+	cookie, err := r.Cookie("iaID")
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
@@ -782,24 +1132,22 @@ func connectDB() (*sqlx.DB, error) {
 	return db, nil
 }
 
-// This is based on a StackOverflow answer here:
-// http://stackoverflow.com/a/31832326
-func generateToken(n int) string {
+func generateTokenBytes(n uint) ([]byte, error) {
 	b := make([]byte, n)
-	// A rand.Int63() generates 63 random bits, enough for letterIdxMax
-	// characters
-	for i, cache, remain := n-1, rand.Int63(), letterIdxMax; i >= 0; {
-		if remain == 0 {
-			cache, remain = rand.Int63(), letterIdxMax
-		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
-			i--
-		}
-		cache >>= letterIdxBits
-		remain--
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
 	}
-	return string(b)
+	return b, nil
+}
+
+// generateToken is taken from the following URL (May 4, 2016), and licensed by
+// its author under MIT.
+//
+// https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/
+func generateToken(n uint) (string, error) {
+	b, err := generateTokenBytes(n)
+	return base64.URLEncoding.EncodeToString(b), err
 }
 
 func writeErr(w http.ResponseWriter, msg string) {
@@ -819,7 +1167,7 @@ func csrf(w http.ResponseWriter, r *http.Request) bool {
 	log.Debug("validating csrf")
 	var userID uint64
 	q := `SELECT userid FROM csrfs WHERE userid=$1 AND token=$2`
-	cookie, err := r.Cookie("id")
+	cookie, err := r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -829,7 +1177,7 @@ func csrf(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	uid := cookie.Value
-	cookie, err = r.Cookie("csrfToken")
+	cookie, err = r.Cookie("iaCSRFToken")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -854,6 +1202,50 @@ func csrf(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// authToken ensures that a remote Abot has access to perform whichever
+// function follows by ensuring the auth tokens passed in match the plugins to
+// be modified. This function returns the verified plugin ID authorized to be
+// modified. If the plugin could not be verified, the returned bool is false.
+func authToken(w http.ResponseWriter, r *http.Request) (uint64, bool) {
+	tmp := r.Header.Get("X-Auth-Tokens")
+	tokens := strings.Split(tmp, ",")
+
+	tmp2 := r.Header.Get("X-Auth-Plugin-ID")
+	pluginID, err := strconv.ParseUint(tmp2, 10, 64)
+	if err != nil {
+		writeErrorAuth(w, errors.New("Unauthorized to make that change. If you are the plugin's publisher, please connect your account."))
+		return 0, false
+	}
+
+	var uid string
+	q := `SELECT userid FROM plugins WHERE id=$1`
+	if err := db.Get(&uid, q, pluginID); err != nil {
+		writeErrorAuth(w, err)
+		return 0, false
+	}
+	var count int
+	q = `SELECT COUNT(*) FROM authtokens WHERE userid=$1 AND token IN (`
+	for i := range tokens {
+		tmp := strconv.FormatInt(int64(i+2), 10)
+		q += "$" + tmp + ","
+	}
+	q = q[:len(q)-1] + ")"
+	args := make([]interface{}, len(tokens)+1)
+	args[0] = uid
+	for i := range tokens {
+		args[i+1] = tokens[i]
+	}
+	if err = db.QueryRow(q, args...).Scan(&count); err != nil {
+		writeErrorAuth(w, err)
+		return 0, false
+	}
+	if count == 0 {
+		writeErrorAuth(w, errors.New("Unauthorized to make that change. If you are the plugin's publisher, please connect your account."))
+		return 0, false
+	}
+	return pluginID, true
+}
+
 // loggedIn determines if the user is currently logged in.
 func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 	log.Debug("validating logged in")
@@ -870,7 +1262,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	// Ensure the token is still valid
-	cookie, err := r.Cookie("issuedAt")
+	cookie, err := r.Cookie("iaIssuedAt")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -903,7 +1295,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	cookie, err = r.Cookie("scopes")
+	cookie, err = r.Cookie("iaScopes")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -913,7 +1305,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	scopes := strings.Fields(cookie.Value)
-	cookie, err = r.Cookie("id")
+	cookie, err = r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -927,7 +1319,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	cookie, err = r.Cookie("email")
+	cookie, err = r.Cookie("iaEmail")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
 		return false
@@ -972,7 +1364,10 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 func createCSRFToken(uid uint64) (token string, err error) {
 	q := `INSERT INTO csrfs (token, userid)
 	      VALUES ($1, $2)`
-	token = generateToken(securityTokenLength)
+	token, err = generateToken(securityTokenLength)
+	if err != nil {
+		return "", err
+	}
 	if _, err := db.Exec(q, token, uid); err != nil {
 		return "", err
 	}
