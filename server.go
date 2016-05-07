@@ -564,8 +564,8 @@ func handlerAPIPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httpr
 		Intent   *string
 	}{}
 	q := `SELECT id, sentence, intent FROM trainings
-	     WHERE pluginid=$1
-	     ORDER BY createdat DESC`
+	      WHERE pluginid=$1
+	      ORDER BY createdat DESC`
 	err := db.Select(&sentences, q, ps.ByName("id"))
 	if err != nil {
 		writeErrorInternal(w, err)
@@ -723,12 +723,9 @@ func handlerAPIPluginsTestAuth(w http.ResponseWriter, r *http.Request,
 		writeErrorInternal(w, err)
 		return
 	}
-	var resp struct {
-		ID   uint64
-		Name string
-	}
-	q = `SELECT id, name FROM plugins WHERE userid=$1`
-	if err = db.Get(&resp, q, uid); err != nil {
+	resp := []uint64{}
+	q = `SELECT id FROM plugins WHERE userid=$1`
+	if err = db.Select(&resp, q, uid); err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
