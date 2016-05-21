@@ -1,6 +1,11 @@
 (function(abot) {
 abot.Login = {}
 abot.Login.controller = function() {
+	abot.Login.checkAuth(function(loggedIn) {
+		if (loggedIn) {
+			return m.route("/profile", null, true)
+		}
+	})
 	var ctrl = this
 	ctrl.login = function(ev) {
 		ev.preventDefault()
@@ -35,11 +40,6 @@ abot.Login.controller = function() {
 			ctrl.showError(err.Msg)
 		})
 	}
-	abot.Login.checkAuth(function(loggedIn) {
-		if (loggedIn) {
-			return m.route("/profile", null, true)
-		}
-	})
 	ctrl.hideError = function() {
 		ctrl.error("")
 		document.getElementById("err").classList.add("hidden")

@@ -1,14 +1,14 @@
 (function(abot) {
 abot.Signup = {}
 abot.Signup.controller = function() {
-	var ctrl = this
 	abot.Login.checkAuth(function(cb) {
 		if (cb) {
 			return m.route("/profile", null, true)
 		}
 	})
-	ctrl.props = {
-		error: m.prop("")
+	var ctrl = this
+	ctrl.focus = function(el) {
+		el.focus()
 	}
 	ctrl.signup = function(ev) {
 		ev.preventDefault()
@@ -28,17 +28,20 @@ abot.Signup.controller = function() {
 			if (!abot.isProduction()) {
 				secure = false
 			}
-			cookie.setItem("iaID", data.ID, exp, null, null, secure)
-			cookie.setItem("iaEmail", data.Email, exp, null, null, secure)
-			cookie.setItem("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
-			cookie.setItem("iaAuthToken", data.AuthToken, exp, null, null, secure)
-			cookie.setItem("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
-			cookie.setItem("iaScopes", data.Scopes, exp, null, null, secure)
+			Cookies.set("iaID", data.ID, exp, null, null, secure)
+			Cookies.set("iaEmail", data.Email, exp, null, null, secure)
+			Cookies.set("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
+			Cookies.set("iaAuthToken", data.AuthToken, exp, null, null, secure)
+			Cookies.set("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
+			Cookies.set("iaScopes", data.Scopes, exp, null, null, secure)
 			m.route("/profile", null, true)
 			console.log("routed to profile")
 		}, function(err) {
 			ctrl.props.error(err.Msg)
 		})
+	}
+	ctrl.props = {
+		error: m.prop("")
 	}
 }
 abot.Signup.view = function(ctrl) {
@@ -56,18 +59,13 @@ abot.Signup.view = function(ctrl) {
 						errMsg,
 						m("form", { onsubmit: ctrl.signup }, [
 							m("div", [
-								m("input", {
-									type: "email",
-									class: "form-control",
-									id: "email",
-									placeholder: "Email"
+								m("input#email[type=email]", {
+									placeholder: "Email",
+									config: ctrl.focus,
 								})
 							]),
 							m("div", [
-								m("input", {
-									type: "password",
-									class: "form-control",
-									id: "password",
+								m("input#password[type=password]", {
 									placeholder: "Password"
 								})
 							]),
