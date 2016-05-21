@@ -32,7 +32,6 @@ abot.Index.view = function() {
 					m("img.icon[src=/public/images/technology.svg][alt=Atom]"),
 					m("h2", "Automate critical tasks"),
 					m("p", "Whether you're automating customer service; inbound sales; or just want your own, personal Jarvis, let Abot do the heavy lifting. Install plugins to handle common tasks and customize the rest."),
-					m(".cta", m("a.btn-light[href=#/]", "See Abot in action")),
 				]),
 			]),
 			m(".content", [
