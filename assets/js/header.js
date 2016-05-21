@@ -11,23 +11,16 @@ abot.Header.view = function(args) {
 			]
 		} else {
 			los = [
-				m("a[href=/login]", { config: m.route }, "Log in"),
-				m("a[href=/signup]", { config: m.route }, "Sign up"),
+				m("a[href=/profile]", { config: m.route }, "Profile"),
 			]
 		}
 	})
 	return m("header", [
-		m(".header-content", [
+		m(".main.header-content", [
 			m(".links", [
-				m("a[href=/guides]", {
-					config: m.route
-				}, "Guides"),
 				m("a[href=/plugins]", {
 					config: m.route
 				}, "Plugins"),
-				m("a[href=https://godoc.org/github.com/itsabot/abot]", {
-					class: "hidden-small",
-				}, "API"),
 				m("a.hidden-small", {
 					href: "https://groups.google.com/forum/#!forum/abot-discussion",
 				}, "Ask for help"),
@@ -39,7 +32,7 @@ abot.Header.view = function(args) {
 			m(".logo", [
 				m("a[href=/]", {
 					config: m.route,
-				}, "Abot")
+				}, m("img[src=/public/images/logo_white.svg][alt=Abot]"))
 			])
 		]),
 		m("div", { id: "content" })

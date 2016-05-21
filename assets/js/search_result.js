@@ -40,7 +40,7 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 				pctrl.props.results().map(function(plugin) {
 					return m("tr", [
 						m("td", [
-							m("div", plugin.Name.String),
+							m("div", plugin.Name),
 							m("small", plugin.Path),
 						]),
 						m("td.hidden-small", plugin.Description.String),
@@ -68,7 +68,7 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 							return ""
 						}),
 						m("td", function(plugin) {
-							if (!plugin.Name.Valid) {
+							if (!plugin.Name) {
 								return m("button", {
 									onclick: ctrl.deletePlugin.bind(undefined, plugin.ID),
 								}, "Remove")

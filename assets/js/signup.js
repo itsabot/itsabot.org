@@ -46,44 +46,43 @@ abot.Signup.view = function(ctrl) {
 	if (!!ctrl.props.error()) {
 		errMsg = m(".alert.alert-error", ctrl.props.error())
 	}
-	return m("div", [
+	return m(".dark", [
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Sign Up"),
-				m("form", { onsubmit: ctrl.signup }, [
-					errMsg,
-					m("div", [
-						m("input", {
-							type: "email",
-							class: "form-control",
-							id: "email",
-							placeholder: "Email"
-						})
+				m("h1.centered.group", "Sign Up"),
+				m(".well", [
+					m(".well-padding", [
+						errMsg,
+						m("form", { onsubmit: ctrl.signup }, [
+							m("div", [
+								m("input", {
+									type: "email",
+									class: "form-control",
+									id: "email",
+									placeholder: "Email"
+								})
+							]),
+							m("div", [
+								m("input", {
+									type: "password",
+									class: "form-control",
+									id: "password",
+									placeholder: "Password"
+								})
+							]),
+							m(".centered", [
+								m("input.btn[type=submit][value=Sign up]"),
+							]),
+						]),
 					]),
-					m("div", [
-						m("input", {
-							type: "password",
-							class: "form-control",
-							id: "password",
-							placeholder: "Password"
-						})
-					]),
-					m("div", [
-						m("input", {
-							class: "btn btn-sm",
-							id: "btn",
-							type: "submit",
-							value: "Sign Up"
-						})
-					]),
-					m("div", [
-						m("span", "Have an account? "),
-						m("a", {
-							href: "/login",
-							config: m.route
-						}, "Log In")
-					]),
+				]),
+				m(".group.centered", [
+					m("span", "Have an account? "),
+					m("a", {
+						href: "/login",
+						config: m.route
+					}, "Log In")
 				]),
 			]),
 		]),

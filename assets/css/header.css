@@ -1,8 +1,8 @@
 header {
-	padding: 2em 0;
-	background-color: #607d8b;
+	padding: 1em 0;
 	width: 100%;
 	font-size: 0.85em;
+	background-color: #0077D5;
 }
 header a {
 	color: white;
@@ -10,25 +10,20 @@ header a {
 }
 header .links {
 	float: right;
+	margin-top: 0.5em;
+	margin-right: -1em;
 }
 header .links a {
 	margin-right: 1em;
 }
 header .logo a {
-	text-transform: uppercase;
-	letter-spacing: 3px;
-	padding: 0.5em 1em;
-	border: 1px solid white;	
 	display: inline;
 }
-header .header-content {
-	max-width: 960px;
-	margin: 0 auto;
+header .logo img {
+	height: 2em;
 }
-@media(max-width: 960px) {
-	header .logo {
-		margin-left: 1em;
-	}
+header .header-content {
+	padding: 0 1em;
 }
 @media(max-width: 640px) {
 	header .hidden-small {

@@ -44,8 +44,9 @@ type Header struct {
 
 type Plugin struct {
 	ID            uint64
-	Name          sql.NullString
+	Name          *string
 	Path          string
+	Icon          sql.NullString
 	Description   sql.NullString
 	DownloadCount uint64
 	CompileOK     bool
@@ -97,6 +98,7 @@ func main() {
 	router.Handle("GET", "/api/plugins/by_name/:name", handlerAPIPluginsByName)
 	router.Handle("GET", "/api/plugins/search/:q", handlerAPIPluginsSearch)
 	router.HandlerFunc("GET", "/api/plugins/popular.json", handlerAPIPluginsPopular)
+	router.Handle("GET", "/api/plugins/browse/:page", handlerAPIPluginsBrowse)
 	router.HandlerFunc("POST", "/api/plugins.json", handlerAPIPluginsCreate)
 	router.HandlerFunc("PUT", "/api/plugins.json", handlerAPIPluginsIncrementCount)
 	router.HandlerFunc("DELETE", "/api/plugins.json", handlerAPIPluginsDelete)
@@ -122,6 +124,7 @@ func main() {
 		var pluginJSON struct {
 			Name        *string
 			Description *string
+			Icon        *string
 		}
 		inc := object.(struct {
 			Path   string
@@ -238,8 +241,8 @@ func main() {
 		}
 		// Save the plugin to the database
 		q := `INSERT INTO plugins (name, description, downloadcount,
-			path, userid, compileok, vetok, testok, error)
-		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8)
+			path, userid, compileok, vetok, testok, error, abotversion, icon)
+		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9)
 		      ON CONFLICT (path) DO UPDATE SET
 		        name=$1,
 			description=$2,
@@ -248,10 +251,12 @@ func main() {
 			compileok=$5,
 			vetok=$6,
 			testok=$7,
-			error=$8`
+			error=$8,
+			abotversion=0.2,
+			icon=$9`
 		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
 			inc.Path, inc.userID, compileOK, vetOK, testOK,
-			errMsg)
+			errMsg, pluginJSON.Icon)
 		if err != nil {
 			log.Info("failed to save plugin to db", err)
 		}
@@ -338,23 +343,64 @@ func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
 func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	var res []struct {
 		ID            uint64
-		Name          sql.NullString
+		Name          *string
 		Path          string
-		Description   sql.NullString
+		Icon          *string
+		Description   *string
 		DownloadCount uint64
 		UserID        uint64
 		CompileOK     bool
 		VetOK         bool
 		TestOK        bool
-		Error         sql.NullString
+		Error         *string
 		Similarity    float64 `db:"sml"`
 	}
-	q := `SELECT id, name, path, description, downloadcount, userid, compileok, vetok, testok, error
+	q := `SELECT id, name, path, description, downloadcount, userid, compileok, vetok, testok, icon, error
 	      FROM plugins
-	      WHERE name IS NOT NULL
+	      WHERE name IS NOT NULL AND icon IS NOT NULL
 	      ORDER BY downloadcount DESC
 	      LIMIT 10`
 	if err := db.Select(&res, q); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	byt, err := json.Marshal(res)
+	if err != nil {
+		log.Info("failed to marshal res", err)
+		writeErrorInternal(w, err)
+		return
+	}
+	if _, err = w.Write(byt); err != nil {
+		log.Info("failed to write bytes", err)
+		return
+	}
+}
+
+func handlerAPIPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	tmp := ps.ByName("page")
+	page, err := strconv.Atoi(tmp)
+	if err != nil {
+		page = 0
+	}
+	res := struct {
+		Count   int
+		Plugins []struct {
+			Name        *string
+			Path        string
+			Icon        *string
+			Description *string
+			AbotVersion *float64
+		}
+	}{}
+	q := `SELECT name, path, icon, description, abotversion FROM plugins
+	      WHERE name IS NOT NULL
+	      ORDER BY createdat DESC OFFSET $1 LIMIT 10`
+	if err := db.Select(&res.Plugins, q, page*10); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q = `SELECT COUNT(*) FROM plugins WHERE name IS NOT NULL`
+	if err := db.Get(&res.Count, q); err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
@@ -1026,7 +1072,12 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	var id uint64
 	q := `INSERT INTO users (email, password) VALUES ($1, $2)
 	      RETURNING id`
-	if err = db.QueryRow(q, req.Email, pass).Scan(&id); err != nil {
+	err = db.QueryRow(q, req.Email, pass).Scan(&id)
+	if err != nil {
+		if err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"` {
+			writeErrorBadRequest(w, errors.New("That email has already been registered."))
+			return
+		}
 		log.Info("failed to insert user into DB", err)
 		writeErrorInternal(w, err)
 		return

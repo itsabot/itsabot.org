@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="890px" height="501px" viewBox="0 0 890 501" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.8.1 (29687) - http://www.bohemiancoding.com/sketch -->
+    <title>Macbook / Macbook 890px</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M104.172414,0 C90.2698994,0 79,11.2490299 79,25.1257996 L79,474.249467 C79,483.499949 86.5139655,491 95.7816092,491 L792.218391,491 C801.487083,491 809,483.499949 809,474.249467 L809,25.1257996 C809,11.2490299 797.730101,0 783.827586,0 L104.172414,0 Z" id="path-1"></path>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="730" height="491" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <path d="M890,478 L447.739666,478 L0,478 L0,491.283385 L0,491.380692 C1.0322017,491.359462 20.019912,501 34.5531867,501 L447.478745,501 L855.689991,501 C870.120985,501 888.973017,491.359462 889.959296,491.359462 C889.986432,491.359462 890,491.283385 890,491.283385 L890,478 Z" id="path-3"></path>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="890" height="23" fill="white">
+            <use xlink:href="#path-3"></use>
+        </mask>
+    </defs>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Macbook-/-Macbook-890px">
+            <use id="Fill" stroke="#3FA2F7" mask="url(#mask-2)" stroke-width="4" xlink:href="#path-1"></use>
+            <polygon id="Fill" stroke="#3FA2F7" points="106 452 789 452 789 30 106 30"></polygon>
+            <path d="M33.991494,512 C22.8339264,512 8.86843895,505.32 2.90500147,502.468 C2.05531862,502.062 1.45093733,501.772 1,501.568 L1,489 L888,489 L888,501.57 C887.548019,501.775 886.947813,502.065 886.103349,502.472 C880.182709,505.323 866.320561,512 855.249632,512 L33.991494,512 Z" id="Fill"></path>
+            <use id="Fill" stroke="#3FA2F7" mask="url(#mask-4)" stroke-width="4" fill="#FFFFFF" xlink:href="#path-3"></use>
+            <path d="M444,17.5 C444,19.4328052 442.433832,21 440.5,21 C438.566168,21 437,19.4328052 437,17.5 C437,15.5671948 438.566168,14 440.5,14 C442.433832,14 444,15.5671948 444,17.5" id="Fill" fill="#3FA2F7"></path>
+        </g>
+    </g>
+</svg>

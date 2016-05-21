@@ -53,6 +53,7 @@ abot.Profile.controller = function() {
 			}
 			ctrl.props.error("")
 			ctrl.props.results(data.Plugins || [])
+			console.log(data.Plugins)
 			ctrl.props.tokens(data.Tokens || [])
 		}, function(err) {
 			ctrl.props.error(err.Msg)
@@ -65,7 +66,7 @@ abot.Profile.view = function(ctrl) {
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Profile - " + cookie.getItem("iaEmail")),
+				m("h1", "Your Profile"),
 				function() {
 					if (ctrl.props.error().length > 0) {
 						return m("#err.alert.alert-error", ctrl.props.error())
@@ -73,45 +74,46 @@ abot.Profile.view = function(ctrl) {
 						return m("#success.alert.alert-success", ctrl.props.success())
 					}
 				}(),
-				m("h2", "Your plugins"),
+				m("h2", "Plugins"),
 				m.component(abot.SearchResult, ctrl),
-				m("a[href=/plugins/new].btn.btn-styled", {
+				m("a[href=/plugins/new].btn", {
 					config: m.route,
 				}, "+ Add plugin"),
-				m("h2", "Auth tokens"),
-				function() {
-					if (ctrl.props.errorToken().length > 0) {
-						return m("#err.alert.alert-error", ctrl.props.errorToken())
-					} else if (ctrl.props.successToken().length > 0) {
-						return m("#success.alert.alert-success", ctrl.props.successToken())
-					}
-				}(),
-				m("p", "Auth tokens enable you to modify your plugins via external services. Only give your auth tokens to services you trust."),
-				m("p", "You should use a unique token to authenticate into each external service."),
-				function() {
-					if (ctrl.props.tokens().length === 0) {
-						return
-					}
-					return m("table", [
-						m("thead", [
-							m("tr", [
-								m("td", ""),
-								m("td", "Token"),
-								m("td.hidden-small", "Created"),
+				m(".group", [
+					m("h2", "Auth tokens"),
+					function() {
+						if (ctrl.props.errorToken().length > 0) {
+							return m("#err.alert.alert-error", ctrl.props.errorToken())
+						} else if (ctrl.props.successToken().length > 0) {
+							return m("#success.alert.alert-success", ctrl.props.successToken())
+						}
+					}(),
+					m("p", "Auth tokens enable you to modify your plugins via external services. Only give your auth tokens to services you trust."),
+					m("p", "You should use a unique token to authenticate into each external service."),
+					function() {
+						if (ctrl.props.tokens().length === 0) {
+							return
+						}
+						return m("table", [
+							m("thead", [
+								m("tr", [
+									m("td", ""),
+									m("td", "Token"),
+									m("td.hidden-small", "Created"),
+								]),
 							]),
-						]),
-						m("tbody", [
-							ctrl.props.tokens().map(function(token, i) {
-								token.Idx = i
-								return m(abot.TableItemToken, ctrl, token)
-							})
-						]),
-					])
-				}(),
-				m("input.btn[type=button]", {
-					value: "Generate Auth Token",
-					onclick: ctrl.generateToken,
-				}),
+							m("tbody", [
+								ctrl.props.tokens().map(function(token, i) {
+									token.Idx = i
+									return m(abot.TableItemToken, ctrl, token)
+								})
+							]),
+						])
+					}(),
+					m("a.btn[type=button]", {
+						onclick: ctrl.generateToken,
+					}, "Generate Auth Token"),
+				]),
 			]),
 		]),
 		m.component(abot.Footer),

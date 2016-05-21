@@ -34,7 +34,6 @@ abot.Searchbar.view = function(ctrl) {
 					placeholder: "Find plugins",
 					config: ctrl.focus,
 				}),
-				m("button[type=submit]", m(".search", m.trust("&#9906;"))),
 			])
 		]),
 	])

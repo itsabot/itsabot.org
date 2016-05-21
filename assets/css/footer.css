@@ -4,3 +4,6 @@ footer {
 	width: 100%;
 	text-align: center;
 }
+footer .icon {
+	vertical-align: inherit;
+}
