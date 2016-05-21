@@ -43,7 +43,7 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 							m("div", plugin.Name),
 							m("small", plugin.Path),
 						]),
-						m("td.hidden-small", plugin.Description.String),
+						m("td.hidden-small", plugin.Description),
 						m("td.hidden-small.center", plugin.DownloadCount),
 						function() {
 							var val = []
