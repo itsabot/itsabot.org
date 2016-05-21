@@ -31,7 +31,6 @@ abot.Login.controller = function() {
 			Cookies.set("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
 			Cookies.set("iaAuthToken", data.AuthToken, exp, null, null, secure)
 			Cookies.set("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
-			Cookies.set("iaScopes", data.Scopes, exp, null, null, secure)
 			if (m.route.param("r") == null) {
 				return m.route("/profile", null, true)
 			}
@@ -112,7 +111,6 @@ abot.Login.checkAuth = function(callback) {
 	Cookies.expire("iaID")
 	Cookies.expire("iaIssuedAt")
 	Cookies.expire("iaEmail")
-	Cookies.expire("iaScopes")
 	Cookies.expire("iaAuthToken")
 	Cookies.expire("iaCSRFToken")
 	return callback(false)

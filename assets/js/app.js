@@ -35,7 +35,6 @@ abot.signout = function(ev) {
 	Cookies.expire("iaID")
 	Cookies.expire("iaEmail")
 	Cookies.expire("iaIssuedAt")
-	Cookies.expire("iaScopes")
 	Cookies.expire("iaCSRFToken")
 	Cookies.expire("iaAuthToken")
 	abot.request({

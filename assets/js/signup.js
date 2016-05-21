@@ -33,7 +33,6 @@ abot.Signup.controller = function() {
 			Cookies.set("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
 			Cookies.set("iaAuthToken", data.AuthToken, exp, null, null, secure)
 			Cookies.set("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
-			Cookies.set("iaScopes", data.Scopes, exp, null, null, secure)
 			m.route("/profile", null, true)
 			console.log("routed to profile")
 		}, function(err) {

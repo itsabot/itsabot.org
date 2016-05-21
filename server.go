@@ -38,7 +38,6 @@ var pool *tunny.WorkPool
 type Header struct {
 	ID       uint64
 	Email    string
-	Scopes   []string
 	IssuedAt int64
 }
 
@@ -933,14 +932,12 @@ func handlerAPIUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		ID        uint64
 		Email     string
-		Scopes    []string
 		AuthToken string
 		IssuedAt  int64
 		CSRFToken string
 	}{
 		ID:        u.ID,
 		Email:     req.Email,
-		Scopes:    header.Scopes,
 		AuthToken: token,
 		IssuedAt:  header.IssuedAt,
 		CSRFToken: csrfToken,
@@ -1095,14 +1092,12 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		ID        uint64
 		Email     string
-		Scopes    []string
 		AuthToken string
 		IssuedAt  int64
 		CSRFToken string
 	}{
 		ID:        id,
 		Email:     req.Email,
-		Scopes:    header.Scopes,
 		AuthToken: token,
 		IssuedAt:  header.IssuedAt,
 		CSRFToken: csrfToken,
@@ -1343,16 +1338,6 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	cookie, err = r.Cookie("iaScopes")
-	if err == http.ErrNoCookie {
-		writeErrorAuth(w, err)
-		return false
-	}
-	if err != nil {
-		writeErrorInternal(w, err)
-		return false
-	}
-	scopes := strings.Fields(cookie.Value)
 	cookie, err = r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
@@ -1376,15 +1361,9 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	email, err := url.QueryUnescape(cookie.Value)
-	if err != nil {
-		writeErrorInternal(w, err)
-		return false
-	}
 	a := Header{
 		ID:       userID,
-		Email:    email,
-		Scopes:   scopes,
+		Email:    cookie.Value,
 		IssuedAt: issuedAt,
 	}
 	byt, err := json.Marshal(a)
@@ -1392,7 +1371,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	known := hmac.New(sha512.New, []byte(os.Getenv("ABOT_SECRET")))
+	known := hmac.New(sha512.New, []byte(os.Getenv("ITSABOT_SECRET")))
 	_, err = known.Write(byt)
 	if err != nil {
 		writeErrorInternal(w, err)
@@ -1427,18 +1406,16 @@ func createCSRFToken(uid uint64) (token string, err error) {
 func getAuthToken(uid uint64, email string) (header *Header, authToken string,
 	err error) {
 
-	scopes := []string{}
 	header = &Header{
 		ID:       uid,
 		Email:    email,
-		Scopes:   scopes,
 		IssuedAt: time.Now().Unix(),
 	}
 	byt, err := json.Marshal(header)
 	if err != nil {
 		return nil, "", err
 	}
-	hash := hmac.New(sha512.New, []byte(os.Getenv("ABOT_SECRET")))
+	hash := hmac.New(sha512.New, []byte(os.Getenv("ITSABOT_SECRET")))
 	_, err = hash.Write(byt)
 	if err != nil {
 		return nil, "", err
