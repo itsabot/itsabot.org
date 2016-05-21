@@ -47,7 +47,7 @@ abot.PluginsBrowse.view = function(ctrl) {
 						var p = ctrl.props.plugins()
 						var els = []
 						for (var i = 0; i < p.length; ++i) {
-							if (p[i].Icon.substring(0, 5) !== "https") {
+							if (p[i].Icon == null || p[i].Icon.substring(0, 5) !== "https") {
 								p[i].Icon = "/public/images/missing.svg"
 								p[i].Missing = true
 							}
