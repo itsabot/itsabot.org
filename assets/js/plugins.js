@@ -2,6 +2,9 @@
 abot.Plugins = {}
 abot.Plugins.controller = function() {
 	var ctrl = this
+	ctrl.useDefaultIcon = function(el) {
+		el.setAttribute("src", "/public/images/missing.svg")
+	}
 	ctrl.props = {
 		results: m.prop([]),
 		popular: m.prop([]),
@@ -30,11 +33,53 @@ abot.Plugins.view = function(ctrl) {
 		m.component(abot.Searchbar, ctrl),
 		m(".main", [
 			m("#plugins-start", [
-				m(".content", [
-					m("h2", "Popular plugins"),
-					m.component(abot.SearchResult, ctrl),
+				m("h2", "Popular plugins"),
+				m(".plugins", [
+					function() {
+						var p = ctrl.props.popular()
+						var els = []
+						for (var i = 0; i < p.length; ++i) {
+							if (p[i].Icon.substring(0, 5) !== "https") {
+								p[i].Icon = "/public/images/missing.svg"
+								p[i].Missing = true
+							}
+							els.push(m(".plugin", [
+								m("a", { href: "https://" + p[i].Path }, [
+									m("img", {
+										src: p[i].Icon,
+										onerror: ctrl.useDefaultIcon,
+										"class": p[i].Missing ? "missing" : "",
+									}),
+									m("div", p[i].Name),
+								]),
+							]))
+						}
+						return els
+					}(),
 				]),
-				m(".content", [
+				m("div", [
+					m("a.btn-light[href=/plugins/browse]", {
+						config: m.route,
+					}, "Browse plugins")
+				]),
+				function() {
+					return abot.Login.checkAuth(function(loggedIn) {
+						if (loggedIn) {
+							console.log("Logged in")
+							return
+						}
+						return m(".group", [
+							m("h2", "Join a growing community of developers."),
+							m("ul", [
+								m("li", "Publish, share, and train your plugins."),
+								m("li", "Get early access to community resources."),
+								m("li", "Be the first to try big improvements we're making to Abot."),
+							]),
+							m("a.btn-light[href=/signup]", { config: m.route }, "Sign up for free"),
+						])
+					})
+				}(),
+				m(".group", [
 					m("h2", "Getting started"),
 					m(".paragraph", m("a[href=/plugins/new]", m("strong", [
 						"Add your plugin to itsabot.org ", m.trust("&raquo;")

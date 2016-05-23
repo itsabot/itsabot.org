@@ -1,5 +1,11 @@
 .icon {
 	font-size: 1.5em;
+	max-height: 64px;
+	max-width: 120px;
+	vertical-align: middle;
+}
+.icon-sm {
+	width: 42px;
 }
 .icon-red {
 	color: red;

@@ -1,0 +1,20 @@
+.well {
+	display: block;
+	margin: 0 auto;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	width: 100%;
+	max-width: 375px;
+	border-bottom: 2px solid #DDD;
+	background-color: white;
+	vertical-align: top;
+	padding: 1em;
+}
+.well input {
+	width: 100%;
+	box-sizing: border-box;
+}
+.well .btn {
+	width: 50%;
+	margin: 1.5em 0;
+}

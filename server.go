@@ -38,14 +38,14 @@ var pool *tunny.WorkPool
 type Header struct {
 	ID       uint64
 	Email    string
-	Scopes   []string
 	IssuedAt int64
 }
 
 type Plugin struct {
 	ID            uint64
-	Name          sql.NullString
+	Name          *string
 	Path          string
+	Icon          sql.NullString
 	Description   sql.NullString
 	DownloadCount uint64
 	CompileOK     bool
@@ -77,6 +77,13 @@ func main() {
 	}
 	log.SetDebug(os.Getenv("ITSABOT_DEBUG") == "true")
 
+	if len(os.Getenv("MAILGUN_API_KEY")) == 0 {
+		log.Fatal("missing env var: MAILGUN_API_KEY")
+	}
+	if len(os.Getenv("MAILGUN_DOMAIN")) == 0 {
+		log.Fatal("missing env var: MAILGUN_DOMAIN")
+	}
+
 	router := httprouter.New()
 	router.ServeFiles("/public/*filepath", http.Dir("public"))
 
@@ -87,6 +94,7 @@ func main() {
 	// User routes
 	router.HandlerFunc("GET", "/api/user.json", handlerAPIUserProfile)
 	router.HandlerFunc("POST", "/api/users.json", handlerAPIUserCreate)
+	router.HandlerFunc("POST", "/api/users/verify.json", handlerAPIUserVerify)
 	router.HandlerFunc("DELETE", "/api/users.json", handlerAPIUserExpireTokens)
 	router.HandlerFunc("POST", "/api/users/login.json", handlerAPIUserLoginSubmit)
 	router.HandlerFunc("GET", "/api/users/auth_tokens.json", handlerAPIAuthTokens)
@@ -97,6 +105,7 @@ func main() {
 	router.Handle("GET", "/api/plugins/by_name/:name", handlerAPIPluginsByName)
 	router.Handle("GET", "/api/plugins/search/:q", handlerAPIPluginsSearch)
 	router.HandlerFunc("GET", "/api/plugins/popular.json", handlerAPIPluginsPopular)
+	router.Handle("GET", "/api/plugins/browse/:page", handlerAPIPluginsBrowse)
 	router.HandlerFunc("POST", "/api/plugins.json", handlerAPIPluginsCreate)
 	router.HandlerFunc("PUT", "/api/plugins.json", handlerAPIPluginsIncrementCount)
 	router.HandlerFunc("DELETE", "/api/plugins.json", handlerAPIPluginsDelete)
@@ -122,6 +131,7 @@ func main() {
 		var pluginJSON struct {
 			Name        *string
 			Description *string
+			Icon        *string
 		}
 		inc := object.(struct {
 			Path   string
@@ -238,8 +248,8 @@ func main() {
 		}
 		// Save the plugin to the database
 		q := `INSERT INTO plugins (name, description, downloadcount,
-			path, userid, compileok, vetok, testok, error)
-		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8)
+			path, userid, compileok, vetok, testok, error, abotversion, icon)
+		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9)
 		      ON CONFLICT (path) DO UPDATE SET
 		        name=$1,
 			description=$2,
@@ -248,10 +258,12 @@ func main() {
 			compileok=$5,
 			vetok=$6,
 			testok=$7,
-			error=$8`
+			error=$8,
+			abotversion=0.2,
+			icon=$9`
 		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
 			inc.Path, inc.userID, compileOK, vetOK, testOK,
-			errMsg)
+			errMsg, pluginJSON.Icon)
 		if err != nil {
 			log.Info("failed to save plugin to db", err)
 		}
@@ -338,23 +350,64 @@ func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
 func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	var res []struct {
 		ID            uint64
-		Name          sql.NullString
+		Name          *string
 		Path          string
-		Description   sql.NullString
+		Icon          *string
+		Description   *string
 		DownloadCount uint64
 		UserID        uint64
 		CompileOK     bool
 		VetOK         bool
 		TestOK        bool
-		Error         sql.NullString
+		Error         *string
 		Similarity    float64 `db:"sml"`
 	}
-	q := `SELECT id, name, path, description, downloadcount, userid, compileok, vetok, testok, error
+	q := `SELECT id, name, path, description, downloadcount, userid, compileok, vetok, testok, icon, error
 	      FROM plugins
-	      WHERE name IS NOT NULL
+	      WHERE name IS NOT NULL AND icon IS NOT NULL
 	      ORDER BY downloadcount DESC
 	      LIMIT 10`
 	if err := db.Select(&res, q); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	byt, err := json.Marshal(res)
+	if err != nil {
+		log.Info("failed to marshal res", err)
+		writeErrorInternal(w, err)
+		return
+	}
+	if _, err = w.Write(byt); err != nil {
+		log.Info("failed to write bytes", err)
+		return
+	}
+}
+
+func handlerAPIPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	tmp := ps.ByName("page")
+	page, err := strconv.Atoi(tmp)
+	if err != nil {
+		page = 0
+	}
+	res := struct {
+		Count   int
+		Plugins []struct {
+			Name        *string
+			Path        string
+			Icon        *string
+			Description *string
+			AbotVersion *float64
+		}
+	}{}
+	q := `SELECT name, path, icon, description, abotversion FROM plugins
+	      WHERE name IS NOT NULL
+	      ORDER BY createdat DESC OFFSET $1 LIMIT 10`
+	if err := db.Select(&res.Plugins, q, page*10); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q = `SELECT COUNT(*) FROM plugins WHERE name IS NOT NULL`
+	if err := db.Get(&res.Count, q); err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
@@ -887,14 +940,12 @@ func handlerAPIUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		ID        uint64
 		Email     string
-		Scopes    []string
 		AuthToken string
 		IssuedAt  int64
 		CSRFToken string
 	}{
 		ID:        u.ID,
 		Email:     req.Email,
-		Scopes:    header.Scopes,
 		AuthToken: token,
 		IssuedAt:  header.IssuedAt,
 		CSRFToken: csrfToken,
@@ -1010,6 +1061,7 @@ func handlerAPIAuthTokenDelete(w http.ResponseWriter, r *http.Request) {
 // handlerAPIUserCreate creates a new user and a first access token.
 func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
+		Name     string
 		Email    string
 		Password string
 	}
@@ -1018,7 +1070,17 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
+	code, err := generateToken(24)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
 	pass, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	tx, err := db.Begin()
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
@@ -1026,8 +1088,19 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	var id uint64
 	q := `INSERT INTO users (email, password) VALUES ($1, $2)
 	      RETURNING id`
-	if err = db.QueryRow(q, req.Email, pass).Scan(&id); err != nil {
+	err = tx.QueryRow(q, req.Email, pass).Scan(&id)
+	if err != nil {
+		if err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"` {
+			writeErrorBadRequest(w, errors.New("That email has already been registered."))
+			return
+		}
 		log.Info("failed to insert user into DB", err)
+		writeErrorInternal(w, err)
+		return
+	}
+	q = `INSERT INTO verifications (userid, code) VALUES ($1, $2)`
+	_, err = tx.Exec(q, id, code)
+	if err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
@@ -1044,14 +1117,12 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		ID        uint64
 		Email     string
-		Scopes    []string
 		AuthToken string
 		IssuedAt  int64
 		CSRFToken string
 	}{
 		ID:        id,
 		Email:     req.Email,
-		Scopes:    header.Scopes,
 		AuthToken: token,
 		IssuedAt:  header.IssuedAt,
 		CSRFToken: csrfToken,
@@ -1063,13 +1134,60 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	q = `INSERT INTO sessions (token, userid)
 	     VALUES ($1, $2)`
-	if _, err = db.Exec(q, resp.AuthToken, id); err != nil {
+	if _, err = tx.Exec(q, resp.AuthToken, id); err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
 	if _, err = w.Write(byt); err != nil {
 		log.Info("failed to write resp to http.ResponseWriter", err)
 	}
+	sendVerificationEmail(req.Email, req.Name, code)
+}
+
+// handlerAPIUserVerify verifies ownership over the user's email to enable publishing.
+func handlerAPIUserVerify(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserID uint64
+		Code   string
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q := `DELETE FROM verifications WHERE userid=$1 AND code=$2`
+	res, err := tx.Exec(q, req.UserID, req.Code)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	if count == 0 {
+		writeErrorAuth(w, errors.New("Invalid code."))
+		return
+	}
+	var user struct {
+		Name  string
+		Email string
+	}
+	q = `UPDATE users WHERE id=$1 SET verified=TRUE RETURNING name, email`
+	if err = tx.QueryRow(q, req.UserID).Scan(&user); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	sendWelcomeEmail(user.Email, user.Name)
 }
 
 // handlerAPIUserExpireTokens expires all tokens for a given user ID. Requires
@@ -1292,16 +1410,6 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	cookie, err = r.Cookie("iaScopes")
-	if err == http.ErrNoCookie {
-		writeErrorAuth(w, err)
-		return false
-	}
-	if err != nil {
-		writeErrorInternal(w, err)
-		return false
-	}
-	scopes := strings.Fields(cookie.Value)
 	cookie, err = r.Cookie("iaID")
 	if err == http.ErrNoCookie {
 		writeErrorAuth(w, err)
@@ -1325,15 +1433,9 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	email, err := url.QueryUnescape(cookie.Value)
-	if err != nil {
-		writeErrorInternal(w, err)
-		return false
-	}
 	a := Header{
 		ID:       userID,
-		Email:    email,
-		Scopes:   scopes,
+		Email:    cookie.Value,
 		IssuedAt: issuedAt,
 	}
 	byt, err := json.Marshal(a)
@@ -1341,7 +1443,7 @@ func loggedIn(w http.ResponseWriter, r *http.Request) bool {
 		writeErrorInternal(w, err)
 		return false
 	}
-	known := hmac.New(sha512.New, []byte(os.Getenv("ABOT_SECRET")))
+	known := hmac.New(sha512.New, []byte(os.Getenv("ITSABOT_SECRET")))
 	_, err = known.Write(byt)
 	if err != nil {
 		writeErrorInternal(w, err)
@@ -1376,18 +1478,16 @@ func createCSRFToken(uid uint64) (token string, err error) {
 func getAuthToken(uid uint64, email string) (header *Header, authToken string,
 	err error) {
 
-	scopes := []string{}
 	header = &Header{
 		ID:       uid,
 		Email:    email,
-		Scopes:   scopes,
 		IssuedAt: time.Now().Unix(),
 	}
 	byt, err := json.Marshal(header)
 	if err != nil {
 		return nil, "", err
 	}
-	hash := hmac.New(sha512.New, []byte(os.Getenv("ABOT_SECRET")))
+	hash := hmac.New(sha512.New, []byte(os.Getenv("ITSABOT_SECRET")))
 	_, err = hash.Write(byt)
 	if err != nil {
 		return nil, "", err

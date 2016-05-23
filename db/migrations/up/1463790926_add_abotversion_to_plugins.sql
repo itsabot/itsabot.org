@@ -1,0 +1,2 @@
+ALTER TABLE plugins ADD COLUMN abotversion NUMERIC;
+ALTER TABLE plugins ADD COLUMN icon VARCHAR(255);

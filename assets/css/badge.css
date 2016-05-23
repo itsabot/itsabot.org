@@ -2,6 +2,7 @@
 	padding: 0.5em;
 	color: white;
 	margin-right: 0.5em;
+	border-radius: 4px;
 }
 .badge.badge-success {
 	background-color: #3C763D;

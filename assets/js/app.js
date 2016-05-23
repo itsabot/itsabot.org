@@ -11,8 +11,8 @@ abot.isProduction = function() {
 }
 abot.request = function(opts) {
 	opts.config = function(xhr) {
-		xhr.setRequestHeader("Authorization", "Bearer " + cookie.getItem("iaAuthToken"))
-		xhr.setRequestHeader("X-CSRF-Token", cookie.getItem("iaCSRFToken"))
+		xhr.setRequestHeader("Authorization", "Bearer " + Cookies.get("iaAuthToken"))
+		xhr.setRequestHeader("X-CSRF-Token", Cookies.get("iaCSRFToken"))
 	}
 	return m.request(opts)
 }
@@ -32,20 +32,17 @@ abot.prettyTime = function(time) {
 }
 abot.signout = function(ev) {
 	ev.preventDefault()
-	cookie.removeItem("iaID")
-	cookie.removeItem("iaEmail")
-	cookie.removeItem("iaIssuedAt")
-	cookie.removeItem("iaScopes")
-	cookie.removeItem("iaCSRFToken")
-	cookie.removeItem("iaAuthToken")
 	abot.request({
 		url: "/api/users.json",
 		method: "DELETE",
-	}).then(function() {
-		m.route("/login", null, true)
-	}, function(err) {
-		console.error(err)
 	})
+	Cookies.expire("iaID")
+	Cookies.expire("iaEmail")
+	Cookies.expire("iaIssuedAt")
+	Cookies.expire("iaScopes")
+	Cookies.expire("iaCSRFToken")
+	Cookies.expire("iaAuthToken")
+	m.route("/login", null, true)
 }
 window.addEventListener("load", function() {
 	m.route.mode = "pathname"
@@ -53,6 +50,8 @@ window.addEventListener("load", function() {
 		"/": abot.Index,
 		"/guides": abot.Guides,
 		"/plugins": abot.Plugins,
+		"/plugins/browse": abot.PluginsBrowse,
+		"/plugins/browse/:page": abot.PluginsBrowse,
 		"/plugins/new": abot.PluginsNew,
 		"/login": abot.Login,
 		"/signup": abot.Signup,

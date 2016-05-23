@@ -1,6 +1,11 @@
 (function(abot) {
 abot.Login = {}
 abot.Login.controller = function() {
+	abot.Login.checkAuth(function(loggedIn) {
+		if (loggedIn) {
+			return m.route("/profile", null, true)
+		}
+	})
 	var ctrl = this
 	ctrl.login = function(ev) {
 		ev.preventDefault()
@@ -21,12 +26,11 @@ abot.Login.controller = function() {
 			if (!abot.isProduction()) {
 				secure = false
 			}
-			cookie.setItem("iaID", data.ID, exp, null, null, secure)
-			cookie.setItem("iaEmail", data.Email, exp, null, null, secure)
-			cookie.setItem("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
-			cookie.setItem("iaAuthToken", data.AuthToken, exp, null, null, secure)
-			cookie.setItem("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
-			cookie.setItem("iaScopes", data.Scopes, exp, null, null, secure)
+			Cookies.set("iaID", data.ID, exp, null, null, secure)
+			Cookies.set("iaEmail", data.Email, exp, null, null, secure)
+			Cookies.set("iaIssuedAt", data.IssuedAt, exp, null, null, secure)
+			Cookies.set("iaAuthToken", data.AuthToken, exp, null, null, secure)
+			Cookies.set("iaCSRFToken", data.CSRFToken, exp, null, null, secure)
 			if (m.route.param("r") == null) {
 				return m.route("/profile", null, true)
 			}
@@ -35,11 +39,6 @@ abot.Login.controller = function() {
 			ctrl.showError(err.Msg)
 		})
 	}
-	abot.Login.checkAuth(function(loggedIn) {
-		if (loggedIn) {
-			return m.route("/profile", null, true)
-		}
-	})
 	ctrl.hideError = function() {
 		ctrl.error("")
 		document.getElementById("err").classList.add("hidden")
@@ -51,46 +50,45 @@ abot.Login.controller = function() {
 	ctrl.error = m.prop("")
 }
 abot.Login.view = function(ctrl) {
-	return m("div", [
+	return m(".dark", [
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Log In"),
-				m("div", {
-					id: "err",
-					class: "alert alert-error hidden"
-				}, ctrl.error()),
-				m("form", { onsubmit: ctrl.login }, [
-					m("div", [
-						m("input", {
-							type: "email",
-							id: "email",
-							placeholder: "Email"
-						}),
-					]),
-					m("div", [
-						m("input", {
-							type: "password",
-							id: "password",
-							placeholder: "Password"
-						}),
-					]),
-					m("div", [
-						m("a", {
-							href: "/forgot_password",
-							config: m.route
-						}, "Forgot password?")
-					]),
-					m("div", [
-						m("input", {
-							class: "btn btn-sm",
-							id: "btn",
-							type: "submit",
-							value: "Log In"
-						}),
+				m("h1.centered.group", "Log In"),
+				m(".well", [
+					m(".well-padding", [
+						m("div", {
+							id: "err",
+							class: "alert alert-error hidden"
+						}, ctrl.error()),
+						m("form", { onsubmit: ctrl.login }, [
+							m("div", [
+								m("input", {
+									type: "email",
+									id: "email",
+									placeholder: "Email"
+								}),
+							]),
+							m("div", [
+								m("input", {
+									type: "password",
+									id: "password",
+									placeholder: "Password"
+								}),
+							]),
+							m(".centered", [
+								m("input.btn[type=submit][value=Log In]"),
+							]),
+						]),
+						m(".centered", [
+							m("a", {
+								href: "/forgot_password",
+								config: m.route
+							}, "Forgot password?")
+						]),
 					]),
 				]),
-				m("div", [
+				m(".group.centered", [
 					m("span", "No account? "),
 					m("a", {
 						href: "/signup",
@@ -99,24 +97,22 @@ abot.Login.view = function(ctrl) {
 				]),
 			]),
 		]),
-		m.component(abot.Footer),
 	])
 }
 abot.Login.checkAuth = function(callback) {
-	var id = cookie.getItem("iaID")
-	var issuedAt = cookie.getItem("iaIssuedAt")
-	var email = cookie.getItem("iaEmail")
+	var id = Cookies.get("iaID")
+	var issuedAt = Cookies.get("iaIssuedAt")
+	var email = Cookies.get("iaEmail")
 	if (id != null && id !== "undefined" && id !== "null" &&
 		issuedAt != null && issuedAt !== "undefined" && issuedAt !== "null" &&
 		email != null && email !== "undefined" && issuedAt !== "null") {
 		return callback(true)
 	}
-	cookie.setItem("iaID", null)
-	cookie.setItem("iaIssuedAt", null)
-	cookie.setItem("iaEmail", null)
-	cookie.setItem("iaScopes", null)
-	cookie.setItem("iaAuthToken", null)
-	cookie.setItem("iaCSRFToken", null)
+	Cookies.expire("iaID")
+	Cookies.expire("iaIssuedAt")
+	Cookies.expire("iaEmail")
+	Cookies.expire("iaAuthToken")
+	Cookies.expire("iaCSRFToken")
 	return callback(false)
 }
 })(!window.abot ? window.abot={} : window.abot);

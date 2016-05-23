@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="793px" height="1387px" viewBox="0 0 793 1387" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.8.1 (29687) - http://www.bohemiancoding.com/sketch -->
+    <title>Artboard 1</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M706.060728,1587.63432 C744.724328,1587.63432 776.067368,1556.29985 776.067368,1517.62468 L776.067368,70.0096446 C776.067368,31.3443855 744.73245,0 706.060728,0 L74.9392725,0 C36.2756723,0 4.93263158,31.3344733 4.93263158,70.0096446 L4.93263158,1517.62468 C4.93263158,1556.28994 36.2675496,1587.63432 74.9392725,1587.63432 L348.492023,1587.63432 C350.465505,1584.13054 354.22089,1581.76479 358.52903,1581.76479 L425.943732,1581.76479 C430.251326,1581.76479 434.006625,1584.13091 435.980289,1587.63432 L706.060728,1587.63432 Z" id="path-1"></path>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="771.134737" height="1587.63432" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <rect id="path-3" x="51" y="188" width="680.703158" height="1201.40858" rx="1"></rect>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="-2" y="-2" width="684.703158" height="1205.40858">
+            <rect x="49" y="186" width="684.703158" height="1205.40858" fill="white"></rect>
+            <use xlink:href="#path-3" fill="black"></use>
+        </mask>
+        <ellipse id="path-5" cx="267.184211" cy="103.363126" rx="12.3315789" ry="12.3263534"></ellipse>
+        <mask id="mask-6" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="24.6631579" height="24.6527068" fill="white">
+            <use xlink:href="#path-5"></use>
+        </mask>
+        <ellipse id="path-7" cx="390.043158" cy="56.0393258" rx="9.04315789" ry="9.03932584"></ellipse>
+        <mask id="mask-8" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="18.0863158" height="18.0786517" fill="white">
+            <use xlink:href="#path-7"></use>
+        </mask>
+        <rect id="path-9" x="328" y="94" width="123.315789" height="16.6177505" rx="8.30887527"></rect>
+        <mask id="mask-10" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="-2" y="-2" width="127.315789" height="20.6177505">
+            <rect x="326" y="92" width="127.315789" height="20.6177505" fill="white"></rect>
+            <use xlink:href="#path-9" fill="black"></use>
+        </mask>
+        <mask id="mask-12" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="-2" y="-2" width="127.315789" height="20.6177505">
+            <rect x="326" y="92" width="127.315789" height="20.6177505" fill="white"></rect>
+            <use xlink:href="#path-9" fill="black"></use>
+        </mask>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard-1">
+            <g id="iPhone-6" transform="translate(6.000000, 2.000000)">
+                <g id="Device">
+                    <g id="Body" stroke="#FFFFFF" fill="#0077D5">
+                        <rect id="Vibrate" stroke-width="2" x="0" y="199.508682" width="11.5094737" height="64.0970378" rx="5.75473684"></rect>
+                        <rect id="Vol-Up" stroke-width="2" x="0" y="335.920327" width="11.5094737" height="119.976507" rx="5.75473684"></rect>
+                        <path d="M5.75473684,480.54954 L5.75473684,480.54954 C2.57648345,480.54954 0,483.12489 0,486.295837 L0,594.77975 C0,597.953342 2.57439608,600.526047 5.75473684,600.526047 L5.75473684,600.526047 L5.75473684,600.526047 C8.93299024,600.526047 11.5094737,597.950697 11.5094737,594.77975 L11.5094737,486.295837 C11.5094737,483.122245 8.93507761,480.54954 5.75473684,480.54954 L5.75473684,480.54954 Z" id="Vol-Down" stroke-width="2"></path>
+                        <rect id="Power" stroke-width="2" x="769.490526" y="334.276813" width="11.5094737" height="119.976507" rx="5.75473684"></rect>
+                        <use mask="url(#mask-2)" stroke-width="8" xlink:href="#path-1"></use>
+                    </g>
+                    <use id="Screen-Edge" stroke="#FFFFFF" stroke-width="4" xlink:href="#path-3" fill="#FFFFFF"></use>
+                    <use id="Front-Cam" stroke="#FFFFFF" mask="url(#mask-6)" stroke-width="4" xlink:href="#path-5"></use>
+                    <use id="Sensor" stroke="#FFFFFF" mask="url(#mask-8)" stroke-width="4" xlink:href="#path-7"></use>
+                    <mask id="mask-11" fill="white">
+                        <use xlink:href="#path-9"></use>
+                    </mask>
+                    <g id="Speaker" stroke="#FFFFFF" stroke-width="2">
+                        <use xlink:href="#path-9"></use>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

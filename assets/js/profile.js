@@ -30,6 +30,7 @@ abot.Profile.controller = function() {
 	ctrl.props = {
 		results: m.prop([]),
 		tokens: m.prop([]),
+		verify: m.prop(sessionStorage.getItem("verify") || false),
 
 		// Success and error blocks related to plugins
 		success: m.prop(""),
@@ -53,6 +54,7 @@ abot.Profile.controller = function() {
 			}
 			ctrl.props.error("")
 			ctrl.props.results(data.Plugins || [])
+			console.log(data.Plugins)
 			ctrl.props.tokens(data.Tokens || [])
 		}, function(err) {
 			ctrl.props.error(err.Msg)
@@ -65,7 +67,7 @@ abot.Profile.view = function(ctrl) {
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
-				m("h1", "Profile - " + cookie.getItem("iaEmail")),
+				m("h1", "Your Profile"),
 				function() {
 					if (ctrl.props.error().length > 0) {
 						return m("#err.alert.alert-error", ctrl.props.error())
@@ -73,45 +75,54 @@ abot.Profile.view = function(ctrl) {
 						return m("#success.alert.alert-success", ctrl.props.success())
 					}
 				}(),
-				m("h2", "Your plugins"),
-				m.component(abot.SearchResult, ctrl),
-				m("a[href=/plugins/new].btn.btn-styled", {
-					config: m.route,
-				}, "+ Add plugin"),
-				m("h2", "Auth tokens"),
 				function() {
-					if (ctrl.props.errorToken().length > 0) {
-						return m("#err.alert.alert-error", ctrl.props.errorToken())
-					} else if (ctrl.props.successToken().length > 0) {
-						return m("#success.alert.alert-success", ctrl.props.successToken())
-					}
-				}(),
-				m("p", "Auth tokens enable you to modify your plugins via external services. Only give your auth tokens to services you trust."),
-				m("p", "You should use a unique token to authenticate into each external service."),
-				function() {
-					if (ctrl.props.tokens().length === 0) {
+					if (!ctrl.props.verify()) {
 						return
 					}
-					return m("table", [
-						m("thead", [
-							m("tr", [
-								m("td", ""),
-								m("td", "Token"),
-								m("td.hidden-small", "Created"),
-							]),
-						]),
-						m("tbody", [
-							ctrl.props.tokens().map(function(token, i) {
-								token.Idx = i
-								return m(abot.TableItemToken, ctrl, token)
-							})
-						]),
-					])
+					sessionStorage.setItem("verify", false)
+					ctrl.props.verify(false)
+					return m(".alert.alert-success", "Thank you for signing up. A verification email has been sent to you. Please verify your email before publishing plugins.")
 				}(),
-				m("input.btn[type=button]", {
-					value: "Generate Auth Token",
-					onclick: ctrl.generateToken,
-				}),
+				m("h2", "Plugins"),
+				m.component(abot.SearchResult, ctrl),
+				m("a[href=/plugins/new].btn", {
+					config: m.route,
+				}, "+ Add plugin"),
+				m(".group", [
+					m("h2", "Auth tokens"),
+					function() {
+						if (ctrl.props.errorToken().length > 0) {
+							return m("#err.alert.alert-error", ctrl.props.errorToken())
+						} else if (ctrl.props.successToken().length > 0) {
+							return m("#success.alert.alert-success", ctrl.props.successToken())
+						}
+					}(),
+					m("p", "Auth tokens enable you to modify your plugins via external services. Only give your auth tokens to services you trust."),
+					m("p", "You should use a unique token to authenticate into each external service."),
+					function() {
+						if (ctrl.props.tokens().length === 0) {
+							return
+						}
+						return m("table", [
+							m("thead", [
+								m("tr", [
+									m("td", ""),
+									m("td", "Token"),
+									m("td.hidden-small", "Created"),
+								]),
+							]),
+							m("tbody", [
+								ctrl.props.tokens().map(function(token, i) {
+									token.Idx = i
+									return m(abot.TableItemToken, ctrl, token)
+								})
+							]),
+						])
+					}(),
+					m("a.btn[type=button]", {
+						onclick: ctrl.generateToken,
+					}, "Generate Auth Token"),
+				]),
 			]),
 		]),
 		m.component(abot.Footer),
