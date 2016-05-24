@@ -16,7 +16,7 @@ abot.Index.view = function() {
 					]),
 					m(".hero-image", [
 						m("img[src=/public/images/iphone_wireframe.svg][alt=iPhone]"),
-						m("video[src=/public/images/rec2_720.mp4]", {
+						m("video[src=/public/images/rec2.mp4]", {
 							autoplay: true,
 							loop: false,
 							muted: true,
