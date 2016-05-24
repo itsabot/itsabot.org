@@ -73,14 +73,14 @@ abot.Index.view = function() {
 						]),
 					]),
 					m(".focusbox-right", [
-						m("img.img[src=/public/images/api.png][alt=Terminal]"),
+						m("img.img[src=/public/images/api.jpg][alt=Terminal]"),
 					]),
 				]),
 			]),
 			m(".content", [
 				m(".focusbox.focusbox-margin", [
 					m(".focusbox-left", [
-						m("img.img[src=/public/images/dashboard.png][alt=Macbook]"),
+						m("img.img[src=/public/images/dashboard.jpg][alt=Macbook]"),
 					]),
 					m(".focusbox-right", [
 						m("h2", "Manage your Abot effortlessly"),
@@ -93,7 +93,7 @@ abot.Index.view = function() {
 				m(".focusbox.focusbox-margin.centered", [
 					m(".group", [
 						m("img.icon[src=/public/images/logo_heroku.svg][alt=Heroku]"),
-						m("img.icon[src=/public/images/logo_docker.svg][alt=Docker]"),
+						m("img.icon[src=/public/images/logo_docker.jpg][alt=Docker]"),
 						m("img.icon[src=/public/images/logo_google_cloud.svg][alt=Google Cloud]"),
 					]),
 					m("h2", "Achieve huge scale"),

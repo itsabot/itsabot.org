@@ -19,6 +19,5 @@ java -jar ~/Downloads/compiler.jar \
 	--js_output_file public/js/main.js \
 	&& rm public/js/main.js.tmp
 
-# Compile CSS, SVG
+# Compile CSS
 minify public/css/main.css
-minify public/images/*.svg
