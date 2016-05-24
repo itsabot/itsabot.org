@@ -3,18 +3,17 @@ abot.Header = {}
 abot.Header.view = function(args) {
 	args = args || {}
 	var los;
-	abot.Login.checkAuth(function(loggedIn) {
-		if (loggedIn) {
-			los = [
-				m("a[href=/profile]", { config: m.route }, "Profile"),
-				m("a[href=#/]", { onclick: abot.signout }, "Sign out"),
-			]
-		} else {
-			los = [
-				m("a[href=/profile]", { config: m.route }, "Profile"),
-			]
-		}
-	})
+	if (abot.isLoggedIn()) {
+		los = [
+			m("a[href=/profile]", { config: m.route }, "Profile"),
+			m("a[href=#/]", { onclick: abot.signout }, "Sign out"),
+		]
+	} else {
+		los = [
+			m("a[href=/login]", { config: m.route }, "Log in"),
+			m("a[href=/signup]", { config: m.route }, "Sign up"),
+		]
+	}
 	return m("header", [
 		m(".main.header-content", [
 			m(".links", [

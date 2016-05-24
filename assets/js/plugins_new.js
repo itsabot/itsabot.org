@@ -1,11 +1,9 @@
 (function(abot) {
 abot.PluginsNew = {}
 abot.PluginsNew.controller = function() {
-	abot.Login.checkAuth(function(loggedIn) {
-		if (!loggedIn) {
-			return m.route("/login", null, true)
-		}
-	})
+	if (!abot.isLoggedIn()) {
+		return m.route("/login", null, true)
+	}
 	var ctrl = this
 	ctrl.submit = function(ev) {
 		ev.preventDefault()

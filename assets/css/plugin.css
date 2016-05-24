@@ -28,6 +28,7 @@
 }
 .plugin .missing {
 	width: 45%;
+	vertical-align: super;
 }
 .plugin-browse {
 	margin: 1em 0;

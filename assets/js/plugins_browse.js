@@ -2,8 +2,8 @@
 abot.PluginsBrowse = {}
 abot.PluginsBrowse.controller = function() {
 	var ctrl = this
-	ctrl.useDefaultIcon = function(el) {
-		el.setAttribute("src", "/public/images/missing.svg")
+	ctrl.useDefaultIcon = function(ev) {
+		ev.target.setAttribute("src", "/public/images/missing.svg")
 	}
 	ctrl.props = {
 		count: m.prop(0),

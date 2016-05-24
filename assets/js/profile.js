@@ -1,11 +1,9 @@
 (function(abot) {
 abot.Profile = {}
 abot.Profile.controller = function() {
-	abot.Login.checkAuth(function(loggedIn) {
-		if (!loggedIn) {
-			return m.route("/login", null, true)
-		}
-	})
+	if (!abot.isLoggedIn()) {
+		return m.route("/login", null, true)
+	}
 	var ctrl = this
 	ctrl.data = function() {
 		return abot.request({
@@ -67,6 +65,20 @@ abot.Profile.view = function(ctrl) {
 		m.component(abot.Header),
 		m(".main", [
 			m(".content", [
+				function() {
+					var v = ctrl.props.verify()
+					if (v === "true") {
+						sessionStorage.setItem("verify", false)
+						ctrl.props.verify(false)
+						return m(".alert.alert-success", "Thank you for signing up. A verification email has been sent to you. Please verify your email before publishing plugins.")
+					}
+					if (v === "verified") {
+						sessionStorage.setItem("verify", false)
+						ctrl.props.verify(false)
+						return m(".alert.alert-success", "Success! We've verified your account. You're now able to publish plugins.")
+					}
+					return
+				}(),
 				m("h1", "Your Profile"),
 				function() {
 					if (ctrl.props.error().length > 0) {
@@ -74,14 +86,6 @@ abot.Profile.view = function(ctrl) {
 					} else if (ctrl.props.success().length > 0) {
 						return m("#success.alert.alert-success", ctrl.props.success())
 					}
-				}(),
-				function() {
-					if (!ctrl.props.verify()) {
-						return
-					}
-					sessionStorage.setItem("verify", false)
-					ctrl.props.verify(false)
-					return m(".alert.alert-success", "Thank you for signing up. A verification email has been sent to you. Please verify your email before publishing plugins.")
 				}(),
 				m("h2", "Plugins"),
 				m.component(abot.SearchResult, ctrl),

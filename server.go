@@ -67,7 +67,8 @@ const bearerAuthKey = "Bearer"
 
 func main() {
 	var err error
-	tmplLayout, err = template.ParseFiles("assets/html/layout.html")
+	p := filepath.Join("assets", "html", "layout.html")
+	tmplLayout, err = template.ParseFiles(p)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,206 +78,10 @@ func main() {
 	}
 	log.SetDebug(os.Getenv("ITSABOT_DEBUG") == "true")
 
-	if len(os.Getenv("MAILGUN_API_KEY")) == 0 {
-		log.Fatal("missing env var: MAILGUN_API_KEY")
-	}
-	if len(os.Getenv("MAILGUN_DOMAIN")) == 0 {
-		log.Fatal("missing env var: MAILGUN_DOMAIN")
-	}
-
-	router := httprouter.New()
-	router.ServeFiles("/public/*filepath", http.Dir("public"))
-
-	// Route base requests to the single page javascript app.
-	router.HandlerFunc("GET", "/", handlerIndex)
-	router.NotFound = http.HandlerFunc(handlerIndex)
-
-	// User routes
-	router.HandlerFunc("GET", "/api/user.json", handlerAPIUserProfile)
-	router.HandlerFunc("POST", "/api/users.json", handlerAPIUserCreate)
-	router.HandlerFunc("POST", "/api/users/verify.json", handlerAPIUserVerify)
-	router.HandlerFunc("DELETE", "/api/users.json", handlerAPIUserExpireTokens)
-	router.HandlerFunc("POST", "/api/users/login.json", handlerAPIUserLoginSubmit)
-	router.HandlerFunc("GET", "/api/users/auth_tokens.json", handlerAPIAuthTokens)
-	router.HandlerFunc("POST", "/api/users/auth_token.json", handlerAPIAuthTokenGenerate)
-	router.HandlerFunc("DELETE", "/api/users/auth_token.json", handlerAPIAuthTokenDelete)
-
-	// Plugin routes
-	router.Handle("GET", "/api/plugins/by_name/:name", handlerAPIPluginsByName)
-	router.Handle("GET", "/api/plugins/search/:q", handlerAPIPluginsSearch)
-	router.HandlerFunc("GET", "/api/plugins/popular.json", handlerAPIPluginsPopular)
-	router.Handle("GET", "/api/plugins/browse/:page", handlerAPIPluginsBrowse)
-	router.HandlerFunc("POST", "/api/plugins.json", handlerAPIPluginsCreate)
-	router.HandlerFunc("PUT", "/api/plugins.json", handlerAPIPluginsIncrementCount)
-	router.HandlerFunc("DELETE", "/api/plugins.json", handlerAPIPluginsDelete)
-	router.Handle("GET", "/api/weather/:city", handlerAPIWeatherSearch)
-
-	// Training routes
-	router.Handle("GET", "/api/plugins/train/:id", handlerAPIPluginsTrainings)
-	router.HandlerFunc("POST", "/api/plugins/train.json", handlerAPIPluginsTrain)
-	router.HandlerFunc("PUT", "/api/plugins/train.json", handlerAPIPluginsTrainUpdate)
-	router.HandlerFunc("DELETE", "/api/plugins/train.json", handlerAPIPluginsTrainDelete)
-	router.Handle("POST", "/api/plugins/test_auth.json", handlerAPIPluginsTestAuth)
-	router.HandlerFunc("OPTIONS", "/api/plugins/train/:pluginName", handlerAPIOptionsTrainings)
-	router.HandlerFunc("OPTIONS", "/api/plugins/train.json", handlerAPIOptionsTrain)
-	router.HandlerFunc("OPTIONS", "/api/plugins/test_auth.json", handlerAPIOptionsTrain)
-
-	// Create a worker pool to process and test plugins
-	pool, err = tunny.CreatePool(runtime.NumCPU(), func(object interface{}) interface{} {
-		var compileOK, testOK, vetOK bool
-		var p string
-		var fi *os.File
-		var fileInfo os.FileInfo
-		var byt []byte
-		var pluginJSON struct {
-			Name        *string
-			Description *string
-			Icon        *string
-		}
-		inc := object.(struct {
-			Path   string
-			userID uint64
-		})
-
-		// Remove any extensions like .git
-		inc.Path = strings.TrimSuffix(inc.Path, filepath.Ext(inc.Path))
-
-		// go get URL
-		log.Info("fetching plugin at", inc.Path)
-		outC, err := exec.
-			Command("/bin/sh", "-c", "go get "+inc.Path).
-			CombinedOutput()
-		if err == nil {
-			compileOK = true
-		} else if err.Error() == "exit status 1" {
-			err = fmt.Errorf("Failed to compile plugin %s", inc.Path)
-			goto savePlugin
-		} else {
-			log.Debug(string(outC))
-			log.Info("failed to fetch plugins at", inc.Path, err)
-			err = fmt.Errorf("Failed to fetch plugins at %s", inc.Path)
-			goto savePlugin
-		}
-
-		// At the end of this request, delete plugin from server to
-		// preserve space
-		p = filepath.Join(os.Getenv("GOPATH"), "src", inc.Path)
-		defer func() {
-			if os.Getenv("ITSABOT_ENV") != "production" {
-				return
-			}
-			outC, err = exec.
-				Command("/bin/sh", "-c", "rm -r "+p).
-				CombinedOutput()
-			if err != nil {
-				log.Info("failed to rm", p)
-			}
-		}()
-
-		// Extract plugin.json
-		fi, err = os.Open(filepath.Join(p, "plugin.json"))
-		if err != nil {
-			log.Info("failed to open plugin.json", err)
-			err = errors.New("Plugin must have a plugin.json")
-			goto savePlugin
-		}
-		defer func() {
-			if err = fi.Close(); err != nil {
-				log.Info("failed to close file", fi.Name())
-			}
-		}()
-		fileInfo, err = fi.Stat()
-		if err != nil {
-			log.Info("failed to get file stats", err)
-			goto savePlugin
-		}
-		if fileInfo.Size() > 4096 {
-			log.Info("plugin.json exceeds max size (4096 bytes). It was %d bytes",
-				fileInfo.Size())
-			err = errors.New("Plugin must have a plugin.json")
-			goto savePlugin
-		}
-		byt, err = ioutil.ReadAll(fi)
-		if err != nil {
-			log.Info("failed to read plugin.json", err)
-			goto savePlugin
-		}
-		if err = json.Unmarshal(byt, &pluginJSON); err != nil {
-			log.Info("failed to unmarshal plugin.json", err)
-			err = errors.New("plugin.json format is invalid")
-			goto savePlugin
-		}
-
-		// Validate the plugin's Name and Description
-		if pluginJSON.Name == nil || len(*pluginJSON.Name) == 0 {
-			err = errors.New("plugin.json must have a Name")
-			goto savePlugin
-		}
-		if len(*pluginJSON.Name) > 255 {
-			err = errors.New("plugin.json's Name is too long. The max length is 255 characters.")
-			goto savePlugin
-		}
-		if pluginJSON.Description != nil && len(*pluginJSON.Description) > 512 {
-			err = errors.New("plugin.json's Description is too long. The max length is 512 characters.")
-			goto savePlugin
-		}
-
-		// Run tests, go vet
-		outC, err = exec.
-			Command("/bin/sh", "-c", "go test -short "+inc.Path).
-			CombinedOutput()
-		if err == nil {
-			testOK = true
-		} else if err.Error() != "exit status 2" {
-			log.Debug(string(outC))
-			log.Info("failed to run go test", inc.Path, err)
-		}
-		outC, err = exec.
-			Command("/bin/sh", "-c", "go vet "+inc.Path).
-			CombinedOutput()
-		if err == nil {
-			vetOK = true
-		} else {
-			log.Debug(string(outC))
-			log.Info("failed to run go vet", inc.Path, err)
-		}
-
-	savePlugin:
-		var errMsg string
-		if err != nil {
-			errMsg = err.Error()
-		}
-		// Save the plugin to the database
-		q := `INSERT INTO plugins (name, description, downloadcount,
-			path, userid, compileok, vetok, testok, error, abotversion, icon)
-		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9)
-		      ON CONFLICT (path) DO UPDATE SET
-		        name=$1,
-			description=$2,
-			downloadcount=plugins.downloadcount+1,
-			updatedat=CURRENT_TIMESTAMP,
-			compileok=$5,
-			vetok=$6,
-			testok=$7,
-			error=$8,
-			abotversion=0.2,
-			icon=$9`
-		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
-			inc.Path, inc.userID, compileOK, vetOK, testOK,
-			errMsg, pluginJSON.Icon)
-		if err != nil {
-			log.Info("failed to save plugin to db", err)
-		}
-		return nil
-	}).Open()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err = pool.Close(); err != nil {
-			log.Info("failed to close worker pool", err)
-		}
-	}()
+	checkEnvVars()
+	router := initRoutes()
+	createPluginCIWorkerPool()
+	go expirePasswordResetTokens(30 * time.Minute)
 
 	log.Info("booted server")
 	if len(os.Getenv("ITSABOT_PORT")) > 0 {
@@ -314,21 +119,21 @@ func handlerIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handlerAPIOptionsTrainings(w http.ResponseWriter, r *http.Request) {
+func hapiOptionsTrainings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	w.WriteHeader(http.StatusOK)
 }
 
-func handlerAPIOptionsTrain(w http.ResponseWriter, r *http.Request) {
+func hapiOptionsTrain(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST,PUT,DELETE")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin,X-Auth-Tokens,X-Auth-Plugin-ID")
 	w.WriteHeader(http.StatusOK)
 }
 
-func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
+func hapiPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Path string
 	}
@@ -347,12 +152,12 @@ func handlerAPIPluginsIncrementCount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
+func hapiPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	var res []struct {
 		ID            uint64
-		Name          *string
+		Name          string
 		Path          string
-		Icon          *string
+		Icon          string
 		Description   *string
 		DownloadCount uint64
 		UserID        uint64
@@ -383,7 +188,7 @@ func handlerAPIPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handlerAPIPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	tmp := ps.ByName("page")
 	page, err := strconv.Atoi(tmp)
 	if err != nil {
@@ -392,7 +197,7 @@ func handlerAPIPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprout
 	res := struct {
 		Count   int
 		Plugins []struct {
-			Name        *string
+			Name        string
 			Path        string
 			Icon        *string
 			Description *string
@@ -423,11 +228,11 @@ func handlerAPIPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 }
 
-// handlerAPIPluginsByName enables an Abot to receive plugin IDs for installed
+// hapiPluginsByName enables an Abot to receive plugin IDs for installed
 // plugins. Handling this on plugin install enables Abot to communicate with
 // plugin IDs in all requests that follow, which dramatically improves DB
 // performance.
-func handlerAPIPluginsByName(w http.ResponseWriter, r *http.Request,
+func hapiPluginsByName(w http.ResponseWriter, r *http.Request,
 	ps httprouter.Params) {
 
 	plugin := ps.ByName("name")
@@ -448,7 +253,7 @@ func handlerAPIPluginsByName(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func handlerAPIPluginsSearch(w http.ResponseWriter, r *http.Request,
+func hapiPluginsSearch(w http.ResponseWriter, r *http.Request,
 	ps httprouter.Params) {
 
 	term := ps.ByName("q")
@@ -458,7 +263,7 @@ func handlerAPIPluginsSearch(w http.ResponseWriter, r *http.Request,
 	}
 	var res []struct {
 		ID            uint64
-		Name          sql.NullString
+		Name          string
 		Path          string
 		Description   sql.NullString
 		DownloadCount uint64
@@ -503,7 +308,7 @@ func handlerAPIPluginsSearch(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func handlerAPIPluginsCreate(w http.ResponseWriter, r *http.Request) {
+func hapiPluginsCreate(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -556,10 +361,10 @@ func handlerAPIPluginsCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-// handlerAPIPluginsDelete removes the plugin from the database if and only if
-// the name is null. This ensures that any plugins that were ever available via
+// hapiPluginsDelete removes the plugin from the database if and only if the
+// name is null. This ensures that any plugins that were ever available via
 // search remain available (preventing a left-pad npm incident).
-func handlerAPIPluginsDelete(w http.ResponseWriter, r *http.Request) {
+func hapiPluginsDelete(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -606,9 +411,9 @@ func handlerAPIPluginsDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handlerAPIPluginsTrainings retrieves trained sentences and properties for a
-// given plugin.
-func handlerAPIPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// hapiPluginsTrainings retrieves trained sentences and properties for a given
+// plugin.
+func hapiPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	sentences := []struct {
@@ -635,9 +440,9 @@ func handlerAPIPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 }
 
-// handlerAPIPluginsTrain trains a plugin on a new sentence or updates the
-// intent of an existing sentence.
-func handlerAPIPluginsTrain(w http.ResponseWriter, r *http.Request) {
+// hapiPluginsTrain trains a plugin on a new sentence or updates the intent of
+// an existing sentence.
+func hapiPluginsTrain(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	pid, ok := authToken(w, r)
@@ -693,8 +498,8 @@ func handlerAPIPluginsTrain(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlerAPIPluginsTrainUpdate updates a plugin's training sentences.
-func handlerAPIPluginsTrainUpdate(w http.ResponseWriter, r *http.Request) {
+// hapiPluginsTrainUpdate updates a plugin's training sentences.
+func hapiPluginsTrainUpdate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	pid, ok := authToken(w, r)
@@ -730,8 +535,8 @@ func handlerAPIPluginsTrainUpdate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handlerAPIPluginsTrainDelete deletes a trained sentence from a plugin.
-func handlerAPIPluginsTrainDelete(w http.ResponseWriter, r *http.Request) {
+// hapiPluginsTrainDelete deletes a trained sentence from a plugin.
+func hapiPluginsTrainDelete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	pid, ok := authToken(w, r)
@@ -752,10 +557,10 @@ func handlerAPIPluginsTrainDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handlerAPIPluginsTestAuth is a helper for testing remote Abot authentication
-// when adding tokens. This handler returns the associated plugin ID for which
+// hapiPluginsTestAuth is a helper for testing remote Abot authentication when
+// adding tokens. This handler returns the associated plugin ID for which
 // training may be performed.
-func handlerAPIPluginsTestAuth(w http.ResponseWriter, r *http.Request,
+func hapiPluginsTestAuth(w http.ResponseWriter, r *http.Request,
 	ps httprouter.Params) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -793,9 +598,9 @@ func handlerAPIPluginsTestAuth(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// handlerAPIWeatherSearch handles basic weather searching without requiring an
-// API key for demo purposes.
-func handlerAPIWeatherSearch(w http.ResponseWriter, r *http.Request,
+// hapiWeatherSearch handles basic weather searching without requiring an API
+// key for demo purposes.
+func hapiWeatherSearch(w http.ResponseWriter, r *http.Request,
 	ps httprouter.Params) {
 
 	city := ps.ByName("city")
@@ -851,8 +656,8 @@ func handlerAPIWeatherSearch(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-// handlerAPIUserProfile fetches data for display on the user profile page.
-func handlerAPIUserProfile(w http.ResponseWriter, r *http.Request) {
+// hapiUserProfile fetches data for display on the user profile page.
+func hapiUserProfile(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ITSABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -894,8 +699,8 @@ func handlerAPIUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlerAPIUserLoginSubmit logs in the user by creating a new access token.
-func handlerAPIUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
+// hapiUserLoginSubmit logs in the user by creating a new access token.
+func hapiUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string
 		Password string
@@ -966,8 +771,8 @@ func handlerAPIUserLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlerAPIAuthTokens returns all the auth tokens for a given user.
-func handlerAPIAuthTokens(w http.ResponseWriter, r *http.Request) {
+// hapiAuthTokens returns all the auth tokens for a given user.
+func hapiAuthTokens(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ITSABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -996,9 +801,9 @@ func handlerAPIAuthTokens(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlerAPIAuthTokenGenerate an auth token for authenticating into external
+// hapiAuthTokenGenerate an auth token for authenticating into external
 // services.
-func handlerAPIAuthTokenGenerate(w http.ResponseWriter, r *http.Request) {
+func hapiAuthTokenGenerate(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ITSABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -1037,8 +842,8 @@ func handlerAPIAuthTokenGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// handlerAPIAuthTokenDelete deletes an auth token from the DB.
-func handlerAPIAuthTokenDelete(w http.ResponseWriter, r *http.Request) {
+// hapiAuthTokenDelete deletes an auth token from the DB.
+func hapiAuthTokenDelete(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ITSABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -1058,8 +863,8 @@ func handlerAPIAuthTokenDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// handlerAPIUserCreate creates a new user and a first access token.
-func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
+// hapiUserCreate creates a new user and a first access token.
+func hapiUserCreate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name     string
 		Email    string
@@ -1070,7 +875,7 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
-	code, err := generateToken(24)
+	code, err := generateToken(36)
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
@@ -1086,15 +891,14 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id uint64
-	q := `INSERT INTO users (email, password) VALUES ($1, $2)
+	q := `INSERT INTO users (name, email, password) VALUES ($1, $2, $3)
 	      RETURNING id`
-	err = tx.QueryRow(q, req.Email, pass).Scan(&id)
+	err = tx.QueryRow(q, req.Name, req.Email, pass).Scan(&id)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"` {
 			writeErrorBadRequest(w, errors.New("That email has already been registered."))
 			return
 		}
-		log.Info("failed to insert user into DB", err)
 		writeErrorInternal(w, err)
 		return
 	}
@@ -1138,29 +942,42 @@ func handlerAPIUserCreate(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
+	if err = tx.Commit(); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
 	if _, err = w.Write(byt); err != nil {
 		log.Info("failed to write resp to http.ResponseWriter", err)
 	}
-	sendVerificationEmail(req.Email, req.Name, code)
+	sendVerificationEmail(req.Email, req.Name, code, id)
 }
 
-// handlerAPIUserVerify verifies ownership over the user's email to enable publishing.
-func handlerAPIUserVerify(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		UserID uint64
-		Code   string
+// hapiUserVerify verifies ownership over the user's email to enable
+// publishing.
+func hapiUserVerify(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("ITSABOT_ENV") != "test" {
+		if !loggedIn(w, r) {
+			return
+		}
 	}
+	var req struct{ Code string }
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErrorBadRequest(w, err)
 		return
 	}
-	tx, err := db.Begin()
+	tx, err := db.Beginx()
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
+	cookie, err := r.Cookie("iaID")
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	uid := cookie.Value
 	q := `DELETE FROM verifications WHERE userid=$1 AND code=$2`
-	res, err := tx.Exec(q, req.UserID, req.Code)
+	res, err := tx.Exec(q, uid, req.Code)
 	if err != nil {
 		writeErrorInternal(w, err)
 		return
@@ -1174,12 +991,18 @@ func handlerAPIUserVerify(w http.ResponseWriter, r *http.Request) {
 		writeErrorAuth(w, errors.New("Invalid code."))
 		return
 	}
+	q = `UPDATE users SET verified=TRUE WHERE id=$1`
+	_, err = tx.Exec(q, uid)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
 	var user struct {
-		Name  string
+		Name  *string
 		Email string
 	}
-	q = `UPDATE users WHERE id=$1 SET verified=TRUE RETURNING name, email`
-	if err = tx.QueryRow(q, req.UserID).Scan(&user); err != nil {
+	q = `SELECT name, email FROM users WHERE id=$1`
+	if err = tx.Get(&user, q, uid); err != nil {
 		writeErrorInternal(w, err)
 		return
 	}
@@ -1187,12 +1010,108 @@ func handlerAPIUserVerify(w http.ResponseWriter, r *http.Request) {
 		writeErrorInternal(w, err)
 		return
 	}
-	sendWelcomeEmail(user.Email, user.Name)
+	var name string
+	if user.Name == nil {
+		name = ""
+	} else {
+		name = *user.Name
+	}
+	sendWelcomeEmail(user.Email, name)
 }
 
-// handlerAPIUserExpireTokens expires all tokens for a given user ID. Requires
-// a token to be sent.
-func handlerAPIUserExpireTokens(w http.ResponseWriter, r *http.Request) {
+// hapiUserForgotPassword sends a "reset password" email to the user associated
+// with the email. If the email doesn't exist, a success message will still be
+// displayed to prevent users from determining which emails exist and which
+// don't via this endpoint.
+func hapiUserForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var email string
+	if err := json.NewDecoder(r.Body).Decode(&email); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	var name sql.NullString
+	q := `SELECT name FROM users WHERE email=$1`
+	err := db.Get(&name, q, email)
+	if err == sql.ErrNoRows {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	code, err := generateToken(36)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q = `INSERT INTO passwordresets (email, code) VALUES ($1, $2)
+	     ON CONFLICT (email) DO
+		UPDATE SET code=$2, createdat=CURRENT_TIMESTAMP`
+	_, err = db.Exec(q, email, code)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	if !name.Valid {
+		name.String = ""
+	}
+	sendPasswordResetEmail(email, name.String, code)
+}
+
+// hapiUserResetPassword confirms a user's password reset code matches our
+// expectations, then allows the user to reset the password.
+func hapiUserResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Code     string
+		Email    string
+		Password string
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q := `DELETE FROM passwordresets WHERE code=$1 AND email=$2`
+	res, err := tx.Exec(q, req.Code, req.Email)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	if rows == 0 {
+		writeErrorBadRequest(w, errors.New("That code has expired. Please request a new password reset."))
+		return
+	}
+	pass, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	q = `UPDATE users SET password=$1 WHERE email=$2`
+	_, err = tx.Exec(q, pass, req.Email)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	if err = tx.Commit(); err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// hapiUserExpireTokens expires all tokens for a given user ID. Requires a
+// token to be sent.
+func hapiUserExpireTokens(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("ITSABOT_ENV") != "test" {
 		if !loggedIn(w, r) {
 			return
@@ -1473,6 +1392,61 @@ func createCSRFToken(uid uint64) (token string, err error) {
 	return token, nil
 }
 
+func checkEnvVars() {
+	if len(os.Getenv("MAILGUN_API_KEY")) == 0 {
+		log.Fatal("missing env var: MAILGUN_API_KEY")
+	}
+	if len(os.Getenv("MAILGUN_DOMAIN")) == 0 {
+		log.Fatal("missing env var: MAILGUN_DOMAIN")
+	}
+	if len(os.Getenv("ITSABOT_URL")) == 0 {
+		log.Debug("ITSABOT_URL var not set. defaulting to https://itsabot.org")
+	}
+}
+
+func initRoutes() *httprouter.Router {
+	router := httprouter.New()
+	router.ServeFiles("/public/*filepath", http.Dir("public"))
+
+	// Route base requests to the single page javascript app.
+	router.HandlerFunc("GET", "/", handlerIndex)
+	router.NotFound = http.HandlerFunc(handlerIndex)
+
+	// User routes
+	router.HandlerFunc("GET", "/api/user.json", hapiUserProfile)
+	router.HandlerFunc("POST", "/api/users.json", hapiUserCreate)
+	router.HandlerFunc("POST", "/api/users/verify.json", hapiUserVerify)
+	router.HandlerFunc("POST", "/api/users/forgot_password.json", hapiUserForgotPassword)
+	router.HandlerFunc("POST", "/api/users/reset_password.json", hapiUserResetPassword)
+	router.HandlerFunc("DELETE", "/api/users.json", hapiUserExpireTokens)
+	router.HandlerFunc("POST", "/api/users/login.json", hapiUserLoginSubmit)
+	router.HandlerFunc("GET", "/api/users/auth_tokens.json", hapiAuthTokens)
+	router.HandlerFunc("POST", "/api/users/auth_token.json", hapiAuthTokenGenerate)
+	router.HandlerFunc("DELETE", "/api/users/auth_token.json", hapiAuthTokenDelete)
+
+	// Plugin routes
+	router.Handle("GET", "/api/plugins/by_name/:name", hapiPluginsByName)
+	router.Handle("GET", "/api/plugins/search/:q", hapiPluginsSearch)
+	router.HandlerFunc("GET", "/api/plugins/popular.json", hapiPluginsPopular)
+	router.Handle("GET", "/api/plugins/browse/:page", hapiPluginsBrowse)
+	router.HandlerFunc("POST", "/api/plugins.json", hapiPluginsCreate)
+	router.HandlerFunc("PUT", "/api/plugins.json", hapiPluginsIncrementCount)
+	router.HandlerFunc("DELETE", "/api/plugins.json", hapiPluginsDelete)
+	router.Handle("GET", "/api/weather/:city", hapiWeatherSearch)
+
+	// Training routes
+	router.Handle("GET", "/api/plugins/train/:id", hapiPluginsTrainings)
+	router.HandlerFunc("POST", "/api/plugins/train.json", hapiPluginsTrain)
+	router.HandlerFunc("PUT", "/api/plugins/train.json", hapiPluginsTrainUpdate)
+	router.HandlerFunc("DELETE", "/api/plugins/train.json", hapiPluginsTrainDelete)
+	router.Handle("POST", "/api/plugins/test_auth.json", hapiPluginsTestAuth)
+	router.HandlerFunc("OPTIONS", "/api/plugins/train/:pluginName", hapiOptionsTrainings)
+	router.HandlerFunc("OPTIONS", "/api/plugins/train.json", hapiOptionsTrain)
+	router.HandlerFunc("OPTIONS", "/api/plugins/test_auth.json", hapiOptionsTrain)
+
+	return router
+}
+
 // getAuthToken returns a token used for future client authorization with a CSRF
 // token.
 func getAuthToken(uid uint64, email string) (header *Header, authToken string,
@@ -1494,6 +1468,182 @@ func getAuthToken(uid uint64, email string) (header *Header, authToken string,
 	}
 	authToken = base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	return header, authToken, nil
+}
+
+// createPluginCIWorkerPool creates a worker pool to process and test plugins.
+func createPluginCIWorkerPool() {
+	var err error
+	pool, err = tunny.CreatePool(runtime.NumCPU(), func(object interface{}) interface{} {
+		var compileOK, testOK, vetOK bool
+		var p string
+		var fi *os.File
+		var fileInfo os.FileInfo
+		var byt []byte
+		var pluginJSON struct {
+			Name        *string
+			Description *string
+			Icon        *string
+		}
+		inc := object.(struct {
+			Path   string
+			userID uint64
+		})
+
+		// Remove any extensions like .git
+		inc.Path = strings.TrimSuffix(inc.Path, filepath.Ext(inc.Path))
+
+		// go get URL
+		log.Info("fetching plugin at", inc.Path)
+		outC, err := exec.
+			Command("/bin/sh", "-c", "go get "+inc.Path).
+			CombinedOutput()
+		if err == nil {
+			compileOK = true
+		} else if err.Error() == "exit status 1" {
+			err = fmt.Errorf("Failed to compile plugin %s", inc.Path)
+			goto savePlugin
+		} else {
+			log.Debug(string(outC))
+			log.Info("failed to fetch plugins at", inc.Path, err)
+			err = fmt.Errorf("Failed to fetch plugins at %s", inc.Path)
+			goto savePlugin
+		}
+
+		// At the end of this request, delete plugin from server to
+		// preserve space
+		p = filepath.Join(os.Getenv("GOPATH"), "src", inc.Path)
+		defer func() {
+			if os.Getenv("ITSABOT_ENV") != "production" {
+				return
+			}
+			outC, err = exec.
+				Command("/bin/sh", "-c", "rm -r "+p).
+				CombinedOutput()
+			if err != nil {
+				log.Info("failed to rm", p)
+			}
+		}()
+
+		// Extract plugin.json
+		fi, err = os.Open(filepath.Join(p, "plugin.json"))
+		if err != nil {
+			log.Info("failed to open plugin.json", err)
+			err = errors.New("Plugin must have a plugin.json")
+			goto savePlugin
+		}
+		defer func() {
+			if err = fi.Close(); err != nil {
+				log.Info("failed to close file", fi.Name())
+			}
+		}()
+		fileInfo, err = fi.Stat()
+		if err != nil {
+			log.Info("failed to get file stats", err)
+			goto savePlugin
+		}
+		if fileInfo.Size() > 4096 {
+			log.Info("plugin.json exceeds max size (4096 bytes). It was %d bytes",
+				fileInfo.Size())
+			err = errors.New("Plugin must have a plugin.json")
+			goto savePlugin
+		}
+		byt, err = ioutil.ReadAll(fi)
+		if err != nil {
+			log.Info("failed to read plugin.json", err)
+			goto savePlugin
+		}
+		if err = json.Unmarshal(byt, &pluginJSON); err != nil {
+			log.Info("failed to unmarshal plugin.json", err)
+			err = errors.New("plugin.json format is invalid")
+			goto savePlugin
+		}
+
+		// Validate the plugin's Name and Description
+		if pluginJSON.Name == nil || len(*pluginJSON.Name) == 0 {
+			err = errors.New("plugin.json must have a Name")
+			goto savePlugin
+		}
+		if len(*pluginJSON.Name) > 255 {
+			err = errors.New("plugin.json's Name is too long. The max length is 255 characters.")
+			goto savePlugin
+		}
+		if pluginJSON.Description != nil && len(*pluginJSON.Description) > 512 {
+			err = errors.New("plugin.json's Description is too long. The max length is 512 characters.")
+			goto savePlugin
+		}
+
+		// Run tests, go vet
+		outC, err = exec.
+			Command("/bin/sh", "-c", "go test -short "+inc.Path).
+			CombinedOutput()
+		if err == nil {
+			testOK = true
+		} else if err.Error() != "exit status 2" {
+			log.Debug(string(outC))
+			log.Info("failed to run go test", inc.Path, err)
+		}
+		outC, err = exec.
+			Command("/bin/sh", "-c", "go vet "+inc.Path).
+			CombinedOutput()
+		if err == nil {
+			vetOK = true
+		} else {
+			log.Debug(string(outC))
+			log.Info("failed to run go vet", inc.Path, err)
+		}
+
+	savePlugin:
+		var errMsg string
+		if err != nil {
+			errMsg = err.Error()
+		}
+		// Save the plugin to the database
+		q := `INSERT INTO plugins (name, description, downloadcount,
+			path, userid, compileok, vetok, testok, error, abotversion, icon)
+		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9)
+		      ON CONFLICT (path) DO UPDATE SET
+		        name=$1,
+			description=$2,
+			downloadcount=plugins.downloadcount+1,
+			updatedat=CURRENT_TIMESTAMP,
+			compileok=$5,
+			vetok=$6,
+			testok=$7,
+			error=$8,
+			abotversion=0.2,
+			icon=$9`
+		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
+			inc.Path, inc.userID, compileOK, vetOK, testOK,
+			errMsg, pluginJSON.Icon)
+		if err != nil {
+			log.Info("failed to save plugin to db", err)
+		}
+		return nil
+	}).Open()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = pool.Close(); err != nil {
+			log.Info("failed to close worker pool", err)
+		}
+	}()
+
+}
+
+func expirePasswordResetTokens(d time.Duration) {
+	t := time.NewTicker(d)
+	select {
+	case <-t.C:
+		q := `DELETE FROM passwordresets
+		      WHERE createdat <= CURRENT_TIMESTAMP - INTERVAL '30 minutes'`
+		_, err := db.Exec(q)
+		if err != nil {
+			log.Info("failed to delete old password reset tokens.", err)
+			return
+		}
+		log.Info("expired password reset tokens")
+	}
 }
 
 func writeErrorBadRequest(w http.ResponseWriter, err error) {

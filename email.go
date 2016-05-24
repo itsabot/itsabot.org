@@ -1,65 +1,67 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
+	"encoding/base64"
+	"net/url"
 	"os"
-	"time"
 
-	"github.com/labstack/gommon/log"
+	"github.com/itsabot/abot/core/log"
+	"github.com/mailgun/mailgun-go"
 )
 
 type email struct {
-	From    string `json:"from"`
-	To      string `json:"to"`
-	Subject string `json:"subject"`
-	HTML    string `json:"html"`
-	Text    string `json:"text"`
+	From    string
+	To      string
+	Subject string
+	HTML    string
+	Text    string
 }
 
-func sendWelcomeEmail(to string, name string) {
+var authMailgun = base64.StdEncoding.EncodeToString([]byte("api:" +
+	os.Getenv("MAILGUN_API_KEY")))
+
+func sendWelcomeEmail(to, name string) {
 	data := &email{
-		From:    "evan@itsabot.org",
+		From:    "Evan <evan@itsabot.org>",
 		To:      to,
 		Subject: "Welcome to the Abot community!",
-		HTML: `<html><body>
-			<p>Hey ` + name + `:</p>
-			<p>Thanks for taking the time to check out Abot. Let me know if you have any questions, or if there's anything else with which I can help.</p>
-			<p>Best,</p>
-			<p><div>Evan</div><div>Founder, Abot</div></p>
-		</body></html>`,
 		Text: `Hey ` + name + `:
-		
-		Thanks for taking the time to check out Abot. Let me know if you have any questions, or if there's anything else with which I can help.
-		
+
+		Thanks for taking the time to check out Abot. I'm here if you have any questions getting up and running or if there's anything else you need.
+
 		Best,
 
 		Evan
-		Founder, Abot`,
+		Founder | Abot
+		+1 (424) 265-9007`,
+		HTML: `<html><body>
+			<p>Hey ` + name + `:</p>
+			<p>Thanks for taking the time to check out Abot! I'm here if you have any questions getting up and running or if there's anything else you need.</p>
+			<p>Best,</p>
+			<p><div>Evan</div><div>Founder | <a href="` + os.Getenv("ITSABOT_URL") + `">Abot</a></div><div>+1 (424) 265-9007</div></p>
+		</body></html>`,
 	}
 	sendEmail(data)
 }
 
-func sendVerificationEmail(to string, name string, code string) {
+func sendVerificationEmail(to, name, code string, id uint64) {
 	data := &email{
-		From:    "abot@itsabot.org",
+		From:    "Abot <abot@itsabot.org>",
 		To:      to,
 		Subject: "Verify your email address",
 		HTML: `<html><body>
 			<p>Hi ` + name + `:</p>
-			<p>In order to publish plugins under this email, we'll first have to verify that it's yours. If you signed up to itsabot.org recently, please click the following link:</p>
-			<p><a href="https://www.itsabot.org/verify/` + code + `">https://www.itsabot.org/verify/` + code + `</a></p>
+			<p>In order to publish plugins under this email, we first have to verify that it's your email. If you signed up on itsabot.org recently, please click the following link:</p>
+			<p><a href="` + os.Getenv("ITSABOT_URL") + `/verify?code=` + code + `">` + os.Getenv("ITSABOT_URL") + `/verify?code=` + code + `</a></p>
 			<p>Thanks,</p>
 			<p>Abot</p>
 		</body></html>`,
 		Text: `Hi ` + name + `:
-		
-		In order to publish plugins under this email, we'll first have to verify that it's yours. If you signed up to itsabot.org recently, please visit the following URL:
 
-		https://www.itsabot.org/verify/` + code + `
-		
+		In order to publish plugins under this email, we first have to verify that it's your email. If you signed up on itsabot.org recently, please visit the following URL:
+
+		` + os.Getenv("ITSABOT_URL") + `/verify/` + code + `
+
 		Thanks,
 
 		Abot`,
@@ -67,38 +69,42 @@ func sendVerificationEmail(to string, name string, code string) {
 	sendEmail(data)
 }
 
+func sendPasswordResetEmail(to, name, code string) {
+	toURL := url.QueryEscape(to)
+	data := &email{
+		From:    "Abot <abot@itsabot.org>",
+		To:      to,
+		Subject: "Reset your password",
+		Text: `Hi ` + name + `:
+
+		Someone recently requested a password reset for your account. If that was you, please visit this link:
+
+		` + os.Getenv("ITSABOT_URL") + `/reset_password?code=` + code + `&email=` + toURL + `
+
+		That link will expire in 30 minutes. If you didn't request a password reset, you can ignore this email.
+
+		Best,
+
+		The Abot team`,
+		HTML: `<html><body>
+			<p>Hi ` + name + `:</p>
+			<p>Someone recently requested a password reset for your account. If that was you, please visit this link:</p>
+			<p>` + os.Getenv("ITSABOT_URL") + `/reset_password?code=` + code + `&email=` + toURL + `</p>
+			<p>That link will expire in 30 minutes. If you didn't request a password reset, you can ignore this email.</p>
+			<p>Best,</p>
+			<p>The Abot team</p>
+		</body></html>`,
+	}
+	sendEmail(data)
+}
+
 func sendEmail(data *email) {
-	client := &http.Client{Timeout: 10 * time.Second}
-	u := "https://api:" + os.Getenv("MAILGUN_API_KEY") +
-		"@api.mailgun.com/v3/" + os.Getenv("MAILGUN_DOMAIN") +
-		"/messages"
-	byt, err := json.Marshal(data)
+	mg := mailgun.NewMailgun(os.Getenv("MAILGUN_DOMAIN"), os.Getenv("MAILGUN_API_KEY"), "")
+	m := mailgun.NewMessage(data.From, data.Subject, data.Text, data.To)
+	m.SetHtml(data.HTML)
+	_, _, err := mg.Send(m)
 	if err != nil {
-		log.Info("failed to marshal welcome email to JSON.", err)
+		log.Info("failed sending email.", err)
 		return
 	}
-	req, err := http.NewRequest("POST", u, bytes.NewBuffer(byt))
-	if err != nil {
-		log.Info("failed to send welcome email.", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Info("failed to send welcome email.", err)
-		if resp != nil {
-			byt, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Info("failed to read mailgun resp body.", err)
-				return
-			}
-			log.Info(string(byt))
-		}
-		return
-	}
-	defer func() {
-		if err = resp.Body.Close(); err != nil {
-			log.Info("failed to close mailgun resp body.", err)
-		}
-	}()
 }

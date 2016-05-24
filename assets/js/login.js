@@ -1,24 +1,24 @@
 (function(abot) {
 abot.Login = {}
 abot.Login.controller = function() {
-	abot.Login.checkAuth(function(loggedIn) {
-		if (loggedIn) {
-			return m.route("/profile", null, true)
-		}
-	})
+	if (abot.isLoggedIn()) {
+		return m.route("/profile", null, true)
+	}
 	var ctrl = this
+	ctrl.focus = function(el) {
+		if (document.activeElement.tagName === "BODY") {
+			el.focus()
+		}
+	}
 	ctrl.login = function(ev) {
 		ev.preventDefault()
-		ctrl.hideError()
-		var email = document.getElementById("email").value
-		var pass = document.getElementById("password").value
 		return m.request({
+			url: "/api/users/login.json",
 			method: "POST",
 			data: {
-				Email: email,
-				Password: pass,
+				Email: ctrl.props.email(),
+				Password: ctrl.props.password(),
 			},
-			url: "/api/users/login.json",
 		}).then(function(data) {
 			var date = new Date()
 			var exp = date.setDate(date + 30)
@@ -36,18 +36,14 @@ abot.Login.controller = function() {
 			}
 			m.route(decodeURIComponent(m.route.param("r")).substr(1), null, true)
 		}, function(err) {
-			ctrl.showError(err.Msg)
+			ctrl.props.error(err.Msg)
 		})
 	}
-	ctrl.hideError = function() {
-		ctrl.error("")
-		document.getElementById("err").classList.add("hidden")
+	ctrl.props = {
+		email: m.prop(""),
+		password: m.prop(""),
+		error: m.prop(""),
 	}
-	ctrl.showError = function(err) {
-		ctrl.error(err)
-		document.getElementById("err").classList.remove("hidden")
-	}
-	ctrl.error = m.prop("")
 }
 abot.Login.view = function(ctrl) {
 	return m(".dark", [
@@ -57,23 +53,34 @@ abot.Login.view = function(ctrl) {
 				m("h1.centered.group", "Log In"),
 				m(".well", [
 					m(".well-padding", [
-						m("div", {
-							id: "err",
-							class: "alert alert-error hidden"
-						}, ctrl.error()),
+						function() {
+							if (ctrl.props.error().length === 0) {
+								return
+							}
+							return m(".alert.alert-error", ctrl.props.error())
+						}(),
+						function() {
+							var g = sessionStorage.getItem("forgot_password")
+							sessionStorage.setItem("forgot_password", null)
+							switch (g) {
+							case "reset_email_sent":
+									return m(".alert.alert-success", "Success! Check your email for a link to reset your password.")
+							case "reset_email_complete":
+									return m(".alert.alert-success", "Success! We've reset your password. Please log in using your new password.")
+							}
+						}(),
 						m("form", { onsubmit: ctrl.login }, [
 							m("div", [
-								m("input", {
-									type: "email",
-									id: "email",
-									placeholder: "Email"
+								m("input[type=email]", {
+									placeholder: "Email",
+									config: ctrl.focus,
+									oninput: m.withAttr("value", ctrl.props.email),
 								}),
 							]),
 							m("div", [
-								m("input", {
-									type: "password",
-									id: "password",
-									placeholder: "Password"
+								m("input[type=password]", {
+									placeholder: "Password",
+									oninput: m.withAttr("value", ctrl.props.password),
 								}),
 							]),
 							m(".centered", [
@@ -81,9 +88,8 @@ abot.Login.view = function(ctrl) {
 							]),
 						]),
 						m(".centered", [
-							m("a", {
-								href: "/forgot_password",
-								config: m.route
+							m("a[href=/forgot_password]", {
+								config: m.route,
 							}, "Forgot password?")
 						]),
 					]),
@@ -98,21 +104,5 @@ abot.Login.view = function(ctrl) {
 			]),
 		]),
 	])
-}
-abot.Login.checkAuth = function(callback) {
-	var id = Cookies.get("iaID")
-	var issuedAt = Cookies.get("iaIssuedAt")
-	var email = Cookies.get("iaEmail")
-	if (id != null && id !== "undefined" && id !== "null" &&
-		issuedAt != null && issuedAt !== "undefined" && issuedAt !== "null" &&
-		email != null && email !== "undefined" && issuedAt !== "null") {
-		return callback(true)
-	}
-	Cookies.expire("iaID")
-	Cookies.expire("iaIssuedAt")
-	Cookies.expire("iaEmail")
-	Cookies.expire("iaAuthToken")
-	Cookies.expire("iaCSRFToken")
-	return callback(false)
 }
 })(!window.abot ? window.abot={} : window.abot);

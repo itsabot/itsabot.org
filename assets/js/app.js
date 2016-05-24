@@ -39,23 +39,46 @@ abot.signout = function(ev) {
 	Cookies.expire("iaID")
 	Cookies.expire("iaEmail")
 	Cookies.expire("iaIssuedAt")
-	Cookies.expire("iaScopes")
 	Cookies.expire("iaCSRFToken")
 	Cookies.expire("iaAuthToken")
 	m.route("/login", null, true)
+}
+abot.isLoggedIn = function() {
+	var id = Cookies.get("iaID")
+	var issuedAt = Cookies.get("iaIssuedAt")
+	var email = Cookies.get("iaEmail")
+	if (id != null && id !== "null" &&
+		issuedAt != null && issuedAt !== "null" &&
+		email != null && email !== "null") {
+		return true
+	}
+	// If the user isn't logged in, ensure we clean out all cookies.
+	Cookies.expire("iaID", null)
+	Cookies.expire("iaEmail", null)
+	Cookies.expire("iaIssuedAt", null)
+	Cookies.expire("iaAuthToken", null)
+	return false
 }
 window.addEventListener("load", function() {
 	m.route.mode = "pathname"
 	m.route(document.body, "/", {
 		"/": abot.Index,
-		"/guides": abot.Guides,
 		"/plugins": abot.Plugins,
 		"/plugins/browse": abot.PluginsBrowse,
 		"/plugins/browse/:page": abot.PluginsBrowse,
 		"/plugins/new": abot.PluginsNew,
 		"/login": abot.Login,
+		"/verify": abot.Verify,
 		"/signup": abot.Signup,
 		"/profile": abot.Profile,
+
+		// Forgot password asks the user their email and sends an "password
+		// reset" link.
+		"/forgot_password": abot.ForgotPassword,
+
+		// Reset password changes the user's password, arrived at via the
+		// "password reset" link sent from Forgot password.
+		"/reset_password": abot.ResetPassword,
 	})
 })
 })(!window.abot ? window.abot={} : window.abot);

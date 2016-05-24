@@ -2,18 +2,20 @@
 abot.Plugins = {}
 abot.Plugins.controller = function() {
 	var ctrl = this
-	ctrl.useDefaultIcon = function(el) {
-		el.setAttribute("src", "/public/images/missing.svg")
-	}
-	ctrl.props = {
-		results: m.prop([]),
-		popular: m.prop([]),
+	ctrl.useDefaultIcon = function(ev) {
+		var t = ev.target
+		t.setAttribute("src", "/public/images/missing.svg")
+		t.classList.add("missing")
 	}
 	ctrl.clear = function() {
 		document.getElementById("searchbar-input").value = ""
 		document.getElementById("plugins-start").classList.remove("hidden")
 		document.getElementById("search-results").classList.add("hidden")
 		ctrl.props.results(ctrl.props.popular())
+	}
+	ctrl.props = {
+		results: m.prop([]),
+		popular: m.prop([]),
 	}
 	m.request({
 		method: "GET",
@@ -63,21 +65,18 @@ abot.Plugins.view = function(ctrl) {
 					}, "Browse plugins")
 				]),
 				function() {
-					return abot.Login.checkAuth(function(loggedIn) {
-						if (loggedIn) {
-							console.log("Logged in")
-							return
-						}
-						return m(".group", [
-							m("h2", "Join a growing community of developers."),
-							m("ul", [
-								m("li", "Publish, share, and train your plugins."),
-								m("li", "Get early access to community resources."),
-								m("li", "Be the first to try big improvements we're making to Abot."),
-							]),
-							m("a.btn-light[href=/signup]", { config: m.route }, "Sign up for free"),
-						])
-					})
+					if (abot.isLoggedIn()) {
+						return
+					}
+					return m(".group", [
+						m("h2", "Join a growing community of developers."),
+						m("ul", [
+							m("li", "Publish, share, and train your plugins."),
+							m("li", "Get early access to community resources."),
+							m("li", "Be the first to try big improvements we're making to Abot."),
+						]),
+						m("a.btn-light[href=/signup]", { config: m.route }, "Sign up for free"),
+					])
 				}(),
 				m(".group", [
 					m("h2", "Getting started"),

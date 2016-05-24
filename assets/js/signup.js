@@ -1,26 +1,25 @@
 (function(abot) {
 abot.Signup = {}
 abot.Signup.controller = function() {
-	abot.Login.checkAuth(function(cb) {
-		if (cb) {
-			return m.route("/profile", null, true)
-		}
-	})
+	if (abot.isLoggedIn()) {
+		return m.route("/profile", null, true)
+	}
 	var ctrl = this
 	ctrl.focus = function(el) {
-		el.focus()
+		if (document.activeElement.tagName === "BODY") {
+			el.focus()
+		}
 	}
 	ctrl.signup = function(ev) {
 		ev.preventDefault()
-		var email = document.getElementById("email").value
-		var pass = document.getElementById("password").value
 		return m.request({
+			url: "/api/users.json",
 			method: "POST",
 			data: {
-				Email: email,
-				Password: pass,
+				Email: ctrl.props.email(),
+				Password: ctrl.props.password(),
+				Name: ctrl.props.name(),
 			},
-			url: "/api/users.json"
 		}).then(function(data) {
 			var date = new Date()
 			var exp = date.setDate(date + 30)
@@ -41,7 +40,10 @@ abot.Signup.controller = function() {
 		})
 	}
 	ctrl.props = {
-		error: m.prop("")
+		name: m.prop(""),
+		email: m.prop(""),
+		password: m.prop(""),
+		error: m.prop(""),
 	}
 }
 abot.Signup.view = function(ctrl) {
@@ -59,14 +61,22 @@ abot.Signup.view = function(ctrl) {
 						errMsg,
 						m("form", { onsubmit: ctrl.signup }, [
 							m("div", [
-								m("input#email[type=email]", {
-									placeholder: "Email",
+								m("input[type=text]", {
+									placeholder: "Your name (optional)",
 									config: ctrl.focus,
+									oninput: m.withAttr("value", ctrl.props.name),
+								})
+							]),
+							m("div", [
+								m("input[type=email]", {
+									placeholder: "Email",
+									oninput: m.withAttr("value", ctrl.props.email),
 								})
 							]),
 							m("div", [
 								m("input#password[type=password]", {
-									placeholder: "Password"
+									placeholder: "Password",
+									oninput: m.withAttr("value", ctrl.props.password),
 								})
 							]),
 							m(".centered", [
@@ -77,10 +87,7 @@ abot.Signup.view = function(ctrl) {
 				]),
 				m(".group.centered", [
 					m("span", "Have an account? "),
-					m("a", {
-						href: "/login",
-						config: m.route
-					}, "Log In")
+					m("a[href=/login]", { config: m.route }, "Log In")
 				]),
 			]),
 		]),
