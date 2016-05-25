@@ -188,7 +188,9 @@ func hapiPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
 	tmp := ps.ByName("page")
 	page, err := strconv.Atoi(tmp)
 	if err != nil {
@@ -225,6 +227,39 @@ func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	if _, err = w.Write(byt); err != nil {
 		log.Info("failed to write bytes", err)
 		return
+	}
+}
+
+// hapiPluginsShow responds with information details about a specific plugin to
+// display alongside install instructions.
+func hapiPluginsShow(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
+	var plugin struct {
+		Name          string
+		Path          string
+		Description   *string
+		DownloadCount uint64
+		Maintainer    *string
+		Options       []string
+		AbotVersion   float64
+		Icon          string
+	}
+	q := `SELECT name, path, description, downloadcount, maintainer, icon,
+		options, abotversion
+	      FROM plugins WHERE id=$1`
+	if err := db.Get(&plugin, q, ps.ByName("id")); err != nil {
+		writeErrorBadRequest(w, err)
+		return
+	}
+	byt, err := json.Marshal(plugin)
+	if err != nil {
+		writeErrorInternal(w, err)
+		return
+	}
+	_, err = w.Write(byt)
+	if err != nil {
+		log.Info("failed to write response.", err)
 	}
 }
 
@@ -413,7 +448,9 @@ func hapiPluginsDelete(w http.ResponseWriter, r *http.Request) {
 
 // hapiPluginsTrainings retrieves trained sentences and properties for a given
 // plugin.
-func hapiPluginsTrainings(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func hapiPluginsTrainings(w http.ResponseWriter, r *http.Request,
+	ps httprouter.Params) {
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Access-Control-Allow-Origin")
 	sentences := []struct {
@@ -1429,6 +1466,7 @@ func initRoutes() *httprouter.Router {
 	router.Handle("GET", "/api/plugins/search/:q", hapiPluginsSearch)
 	router.HandlerFunc("GET", "/api/plugins/popular.json", hapiPluginsPopular)
 	router.Handle("GET", "/api/plugins/browse/:page", hapiPluginsBrowse)
+	router.Handle("GET", "/api/plugins/show/:id", hapiPluginsShow)
 	router.HandlerFunc("POST", "/api/plugins.json", hapiPluginsCreate)
 	router.HandlerFunc("PUT", "/api/plugins.json", hapiPluginsIncrementCount)
 	router.HandlerFunc("DELETE", "/api/plugins.json", hapiPluginsDelete)

@@ -44,11 +44,30 @@
 	text-decoration: none;
 	font-weight: 500;
 	white-space: nowrap;
+	display: inline-block;
 }
 .btn-light:hover {
 	background-color: #FFF9F9;
 	opacity: 0.8;
 }
+.btn-light img {
+	max-width: 36px;
+	height: 36px;
+}
 .btn-left {
 	margin-right: 1em;
+}
+.btn-group {
+	padding-bottom: 3em;
+	border-bottom: 1px solid #CCC;
+}
+.btn-group .btn-light {
+	width: 150px;
+	height: 65px;
+	vertical-align: top;
+	margin-top: 1em;
+}
+.btn-group img {
+	vertical-align: top;
+	margin-bottom: 0.4em;
 }

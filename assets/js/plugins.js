@@ -46,7 +46,7 @@ abot.Plugins.view = function(ctrl) {
 								p[i].Missing = true
 							}
 							els.push(m(".plugin", [
-								m("a", { href: "https://" + p[i].Path }, [
+								m("a", { href: "/plugins/" + p[i].ID }, [
 									m("img", {
 										src: p[i].Icon,
 										onerror: ctrl.useDefaultIcon,

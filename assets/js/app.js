@@ -67,10 +67,12 @@ window.addEventListener("load", function() {
 		"/plugins/browse": abot.PluginsBrowse,
 		"/plugins/browse/:page": abot.PluginsBrowse,
 		"/plugins/new": abot.PluginsNew,
+		"/plugins/:id": abot.PluginsInstall,
 		"/login": abot.Login,
 		"/verify": abot.Verify,
 		"/signup": abot.Signup,
 		"/profile": abot.Profile,
+		"/install": abot.Install,
 
 		// Forgot password asks the user their email and sends an "password
 		// reset" link.
