@@ -81,6 +81,11 @@ func main() {
 	checkEnvVars()
 	router := initRoutes()
 	createPluginCIWorkerPool()
+	defer func() {
+		if err = pool.Close(); err != nil {
+			log.Info("failed to close worker pool", err)
+		}
+	}()
 	go expirePasswordResetTokens(30 * time.Minute)
 
 	log.Info("booted server")
@@ -241,12 +246,11 @@ func hapiPluginsShow(w http.ResponseWriter, r *http.Request,
 		Description   *string
 		DownloadCount uint64
 		Maintainer    *string
-		Options       []string
 		AbotVersion   float64
 		Icon          string
 	}
 	q := `SELECT name, path, description, downloadcount, maintainer, icon,
-		options, abotversion
+		abotversion
 	      FROM plugins WHERE id=$1`
 	if err := db.Get(&plugin, q, ps.ByName("id")); err != nil {
 		writeErrorBadRequest(w, err)
@@ -1661,12 +1665,6 @@ func createPluginCIWorkerPool() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err = pool.Close(); err != nil {
-			log.Info("failed to close worker pool", err)
-		}
-	}()
-
 }
 
 func expirePasswordResetTokens(d time.Duration) {
