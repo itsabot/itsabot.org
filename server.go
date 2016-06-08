@@ -176,7 +176,7 @@ func hapiPluginsPopular(w http.ResponseWriter, r *http.Request) {
 	      FROM plugins
 	      WHERE name IS NOT NULL AND icon IS NOT NULL
 	      ORDER BY downloadcount DESC
-	      LIMIT 10`
+	      LIMIT 6`
 	if err := db.Select(&res, q); err != nil {
 		writeErrorInternal(w, err)
 		return

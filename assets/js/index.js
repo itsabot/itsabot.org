@@ -10,9 +10,7 @@ abot.Index.view = function() {
 						m("h1", "Build your own digital assistant"),
 						m("p", "Digital assistants are huge, complex pieces of software. Abot makes it easy and fun to build your own digital assistant, and we include everything you need to get started."),
 						m(".btn-container", [
-							m("a[href=/install].btn", {
-								config: m.route
-							}, "Install the latest version"),
+							m("a[href=https://github.com/itsabot/abot].btn", "Install the latest version"),
 							m("div", m(".subtle", "Version 0.2.0")),
 						]),
 					]),
@@ -110,9 +108,7 @@ abot.Index.view = function() {
 				m(".focusbox.centered.focusbox-no-border", [
 					m("h2", "Take Abot for a spin"),
 					m("p", "Install Abot, add plugins, and deploy to Heroku in less than an hour."),
-					m("a[href=/install].btn", {
-						config: m.route,
-					}, "Get Started"),
+					m("a[href=https://github.com/itsabot/abot].btn", "Get Started"),
 				]),
 			]),
 		]),
