@@ -8,7 +8,7 @@
 set -e
 
 # Move assets to public/ and concat them
-mkdir -p public/{js,css,images}
+mkdir -p public/{js,css,images,installers}
 cat assets/{vendor/,}js/*.js > public/js/main.js.tmp
 cat assets/{vendor/,}css/*.css > public/css/main.css
 ln -f assets/images/* public/images/
