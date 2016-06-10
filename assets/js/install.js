@@ -63,7 +63,7 @@ abot.Install.view = function(ctrl) {
 					"Install Abot on Mac OS X",
 				]),
 				m("p", "To install Abot on Mac OS X, run the following command in your terminal:"),
-				m("code", "$ wget -O- https://www.itsabot.org/install_osx.sh | sh"),
+				m("code", "$ wget -O- https://www.itsabot.org/public/installers/install_osx.sh | sh"),
 				m("p", [
 					"This will install Abot along with its dependencies using a Mac package manager called ",
 					m("a[href=http://brew.sh/]", "homebrew."),
@@ -86,7 +86,7 @@ abot.Install.view = function(ctrl) {
 					"Install Abot on Debian/Ubuntu",
 				]),
 				m("p", "To install Abot on Debian, Ubuntu, or other Debian-flavored variants, run the following command in your terminal:"),
-				m("code", "$ wget -O- https://www.itsabot.org/install_deb.sh | sh"),
+				m("code", "$ wget -O- https://www.itsabot.org/public/installers/install_deb.sh | sh"),
 				m("p", [
 					"This will install Abot along with its dependencies (Go 1.6+, Postgres 9.5+). If you'd like to customize the install, you can follow the ",
 					m("a[href=#/]", {

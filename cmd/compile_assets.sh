@@ -12,6 +12,7 @@ mkdir -p public/{js,css,images}
 cat assets/{vendor/,}js/*.js > public/js/main.js.tmp
 cat assets/{vendor/,}css/*.css > public/css/main.css
 ln -f assets/images/* public/images/
+ln -f assets/installers/* public/installers/
 
 # Compile JS
 java -jar ~/Downloads/compiler.jar \
