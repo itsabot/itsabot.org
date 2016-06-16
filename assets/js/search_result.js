@@ -2,6 +2,9 @@
 abot.SearchResult = {}
 abot.SearchResult.controller = function(pctrl) {
 	var ctrl = this
+	ctrl.viewPlugin = function(id) {
+		m.route("/plugins/"+id)
+	}
 	ctrl.deletePlugin = function(id) {
 		abot.request({
 			method: "DELETE",
@@ -38,7 +41,9 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 			]),
 			m("tbody", [
 				pctrl.props.results().map(function(plugin) {
-					return m("tr", [
+					return m("tr", {
+						onclick: ctrl.viewPlugin.bind(undefined, plugin.ID),
+					}, [
 						m("td", [
 							m("div", plugin.Name),
 							m("small", plugin.Path),
