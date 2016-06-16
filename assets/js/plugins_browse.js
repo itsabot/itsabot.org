@@ -80,7 +80,8 @@ abot.PluginsBrowse.view = function(ctrl) {
 							href: "/plugins/browse/" + (page-1),
 							config: m.route,
 						}, "Prev"))
-					} else if (ctrl.props.plugins().length === 10) {
+					} else if (ctrl.props.plugins().length === 10 &&
+							   ctrl.props.count() > 10) {
 						els.push(m("a.btn-light", {
 							href: "/plugins/browse/" + (page+1),
 							config: m.route,
