@@ -52,7 +52,10 @@ abot.PluginsBrowse.view = function(ctrl) {
 								p[i].Missing = true
 							}
 							els.push(m(".plugin-browse", [
-								m("a", { href: "https://" + p[i].Path }, [
+								m("a", {
+									href: "/plugins/" + p[i].ID,
+									config: m.route,
+								}, [
 									m(".plugin-browse-left", [
 										m("img.plugin-browse-icon", {
 											src: p[i].Icon,

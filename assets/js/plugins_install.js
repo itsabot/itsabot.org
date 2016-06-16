@@ -13,7 +13,8 @@ abot.PluginsInstall.controller = function() {
 		maintainer: m.prop(""),
 		abotVersion: m.prop(0.0),
 		icon: m.prop(""),
-		options: m.prop([]),
+		settings: m.prop([]),
+		usage: m.prop([]),
 		error: m.prop(""),
 	}
 	m.request({
@@ -26,7 +27,8 @@ abot.PluginsInstall.controller = function() {
 		ctrl.props.maintainer(resp.Maintainer)
 		ctrl.props.abotVersion(resp.AbotVersion)
 		ctrl.props.icon(resp.Icon || "")
-		ctrl.props.options(resp.Options || [])
+		ctrl.props.settings(resp.Settings || [])
+		ctrl.props.usage(resp.Usage || [])
 	}, function(err) {
 		ctrl.props.error(err.Msg)
 	})
@@ -43,17 +45,25 @@ abot.PluginsInstall.view = function(ctrl) {
 					return m(".alert.alert-error", ctrl.props.error())
 				}(),
 				m("h1.content", [
-					m("img.icon-inline.icon-inline-lg", {
+					m("img.icon-inline", {
 						src: ctrl.props.icon(),
 						onerror: ctrl.useDefaultIcon,
 					}),
 					ctrl.props.name(),
 				]),
-				m(".group", [
-					m("p", ctrl.props.description()),
+
+				m("p", {
+					style: "margin: 2em 0",
+				}, ctrl.props.description()),
+
+				m("h3", "Examples"),
+				m("ul.no-style", [
+					ctrl.props.usage().map(function(use) {
+						return m("li", use)
+					}),
 				]),
 
-				m("h3.group", "Install this plugin"),
+				m("h3", "Install this plugin"),
 				m("ol", [
 					m("li", [
 						"Add the following to your plugins.json under Dependencies: ",
@@ -65,32 +75,42 @@ abot.PluginsInstall.view = function(ctrl) {
 						".",
 					]),
 					function() {
-						if (ctrl.props.options().length === 0) {
+						var s =  ctrl.props.settings()
+						if (s.length === 0) {
 							return
 						}
 						return m("li", [
-							"Edit within ",
+							"Edit the following variables under Settings in your Abot's Admin Panel.",
+							m("ul", [
+								ctrl.props.settings().map(function(st) {
+									return m("li.subtle", st)
+								})
+							]),
 						])
 					}(),
 				]),
 
-				m("h3.group", "Info"),
-				m("div", "Compatible with Abot v" + ctrl.props.abotVersion()),
-				m("div", "Downloads: " + ctrl.props.downloadCount()),
-				m("div", [
-					"Plugin URL: ",
-					m("a", {
-						href: "https://" + ctrl.props.path(),
-					}, "https://" + ctrl.props.path()),
+				m("h3", "Info"),
+				m("ul.no-style", [
+					m("li", "Compatible with Abot v" + ctrl.props.abotVersion()),
+					m("li", "Downloads: " + ctrl.props.downloadCount()),
+					m("li", [
+						"Plugin URL: ",
+						m("a", {
+							href: "https://" + ctrl.props.path(),
+						}, "https://" + ctrl.props.path()),
+					]),
+					function() {
+						if (ctrl.props.maintainer() == null) {
+							return
+						}
+						return m("li", [
+							m("a.btn-light.content", {
+								href: "mailto:" + ctrl.props.maintainer(),
+							}, "Contact the maintainer")
+						])
+					}(),
 				]),
-				function() {
-					if (ctrl.props.maintainer() == null) {
-						return
-					}
-					return m("a.btn-light.content", {
-						href: "mailto:" + ctrl.props.maintainer(),
-					}, "Contact the maintainer")
-				}(),
 			]),
 		]),
 		m.component(abot.Footer),

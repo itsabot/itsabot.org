@@ -1,6 +1,15 @@
 ul {
 	margin-bottom: 2em;
 }
-ul li {
+li {
 	margin: 0.5em 0;
+}
+li.subtle {
+	font-size: 14px;
+}
+ul.no-style li {
+	list-style: none;
+}
+ul.no-style {
+	padding-left: 0;
 }

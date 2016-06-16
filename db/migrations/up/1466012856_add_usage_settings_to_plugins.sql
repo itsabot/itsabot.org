@@ -1,0 +1,2 @@
+ALTER TABLE plugins ADD COLUMN usage VARCHAR(255)[];
+ALTER TABLE plugins ADD COLUMN settings VARCHAR(255)[];

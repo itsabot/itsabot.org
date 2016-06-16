@@ -25,6 +25,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/itsabot/abot/core/log"
+	"github.com/itsabot/abot/shared/datatypes"
 	"github.com/jeffail/tunny"
 	"github.com/jmoiron/sqlx"
 	"github.com/julienschmidt/httprouter"
@@ -171,8 +172,11 @@ func hapiPluginsPopular(w http.ResponseWriter, r *http.Request) {
 		TestOK        bool
 		Error         *string
 		Similarity    float64 `db:"sml"`
+		Settings      *dt.StringSlice
+		Usage         *dt.StringSlice
 	}
-	q := `SELECT id, name, path, description, downloadcount, userid, compileok, vetok, testok, icon, error
+	q := `SELECT id, name, path, description, downloadcount, userid,
+		compileok, vetok, testok, icon, error, settings, usage
 	      FROM plugins
 	      WHERE name IS NOT NULL AND icon IS NOT NULL
 	      ORDER BY downloadcount DESC
@@ -204,6 +208,7 @@ func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request,
 	res := struct {
 		Count   int
 		Plugins []struct {
+			ID          uint64
 			Name        string
 			Path        string
 			Icon        *string
@@ -211,7 +216,8 @@ func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request,
 			AbotVersion *float64
 		}
 	}{}
-	q := `SELECT name, path, icon, description, abotversion FROM plugins
+	q := `SELECT id, name, path, icon, description, abotversion
+	      FROM plugins
 	      WHERE name IS NOT NULL
 	      ORDER BY createdat DESC OFFSET $1 LIMIT 10`
 	if err := db.Select(&res.Plugins, q, page*10); err != nil {
@@ -248,9 +254,11 @@ func hapiPluginsShow(w http.ResponseWriter, r *http.Request,
 		Maintainer    *string
 		AbotVersion   float64
 		Icon          string
+		Usage         *dt.StringSlice
+		Settings      *dt.StringSlice
 	}
 	q := `SELECT name, path, description, downloadcount, maintainer, icon,
-		abotversion
+		abotversion, usage, settings
 	      FROM plugins WHERE id=$1`
 	if err := db.Get(&plugin, q, ps.ByName("id")); err != nil {
 		writeErrorBadRequest(w, err)
@@ -1525,6 +1533,8 @@ func createPluginCIWorkerPool() {
 			Name        *string
 			Description *string
 			Icon        *string
+			Settings    map[string]struct{}
+			Usage       dt.StringSlice
 		}
 		inc := object.(struct {
 			Path   string
@@ -1613,6 +1623,8 @@ func createPluginCIWorkerPool() {
 			err = errors.New("plugin.json's Description is too long. The max length is 512 characters.")
 			goto savePlugin
 		}
+		// TODO confirm the plugin uses the Settings API instead of
+		// os.Getenv.
 
 		// Run tests, go vet
 		outC, err = exec.
@@ -1641,8 +1653,10 @@ func createPluginCIWorkerPool() {
 		}
 		// Save the plugin to the database
 		q := `INSERT INTO plugins (name, description, downloadcount,
-			path, userid, compileok, vetok, testok, error, abotversion, icon)
-		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9)
+			path, userid, compileok, vetok, testok, error,
+			abotversion, icon, settings, usage)
+		      VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, 0.2, $9, $10,
+			$11)
 		      ON CONFLICT (path) DO UPDATE SET
 		        name=$1,
 			description=$2,
@@ -1653,10 +1667,19 @@ func createPluginCIWorkerPool() {
 			testok=$7,
 			error=$8,
 			abotversion=0.2,
-			icon=$9`
+			icon=$9,
+			settings=$10,
+			usage=$11`
+		settings := dt.StringSlice{}
+		for k := range pluginJSON.Settings {
+			settings = append(settings, k)
+		}
+		if pluginJSON.Usage == nil {
+			pluginJSON.Usage = dt.StringSlice{}
+		}
 		_, err = db.Exec(q, pluginJSON.Name, pluginJSON.Description,
 			inc.Path, inc.userID, compileOK, vetOK, testOK,
-			errMsg, pluginJSON.Icon)
+			errMsg, pluginJSON.Icon, settings, pluginJSON.Usage)
 		if err != nil {
 			log.Info("failed to save plugin to db", err)
 		}

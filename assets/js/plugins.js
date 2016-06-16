@@ -80,7 +80,9 @@ abot.Plugins.view = function(ctrl) {
 				}(),
 				m(".group", [
 					m("h2", "Getting started"),
-					m(".paragraph", m("a[href=/plugins/new]", m("strong", [
+					m(".paragraph", m("a[href=/plugins/new]", {
+						config: m.route,
+					}, m("strong", [
 						"Add your plugin to itsabot.org ", m.trust("&raquo;")
 					]))),
 					m("div", "Submit your plugin to be included in search."),
