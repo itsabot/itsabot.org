@@ -52,18 +52,23 @@ abot.PluginsInstall.view = function(ctrl) {
 					ctrl.props.name(),
 				]),
 
-				m("p", {
-					style: "margin: 2em 0",
-				}, ctrl.props.description()),
+				m("p.group", ctrl.props.description()),
 
-				m("h3", "Examples"),
-				m("ul.no-style", [
-					ctrl.props.usage().map(function(use) {
-						return m("li", use)
-					}),
-				]),
+				function() {
+					if (ctrl.props.usage().length === 0) {
+						return
+					}
+					return [
+						m("h3.section", "Examples"),
+						m("ul.no-style", [
+							ctrl.props.usage().map(function(use) {
+								return m("li", use)
+							}),
+						]),
+					]
+				}(),
 
-				m("h3", "Install this plugin"),
+				m("h3.section", "Install this plugin"),
 				m("ol", [
 					m("li", [
 						"Add the following to your plugins.json under Dependencies: ",
@@ -90,7 +95,7 @@ abot.PluginsInstall.view = function(ctrl) {
 					}(),
 				]),
 
-				m("h3", "Info"),
+				m("h3.section", "Info"),
 				m("ul.no-style", [
 					m("li", "Compatible with Abot v" + ctrl.props.abotVersion()),
 					m("li", "Downloads: " + ctrl.props.downloadCount()),

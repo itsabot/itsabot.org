@@ -12,6 +12,9 @@ body {
 input {
 	font: inherit;
 }
+.section {
+	margin: 2em 0 0 0;
+}
 .main {
 	max-width: 960px;
 	display: block;
