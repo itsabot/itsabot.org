@@ -246,23 +246,50 @@ func hapiPluginsBrowse(w http.ResponseWriter, r *http.Request,
 func hapiPluginsShow(w http.ResponseWriter, r *http.Request,
 	ps httprouter.Params) {
 
-	var plugin struct {
+	var tmp struct {
 		Name          string
 		Path          string
-		Description   *string
+		Description   sql.NullString
+		Maintainer    sql.NullString
+		Icon          sql.NullString
 		DownloadCount uint64
-		Maintainer    *string
 		AbotVersion   float64
-		Icon          string
 		Usage         *dt.StringSlice
 		Settings      *dt.StringSlice
 	}
-	q := `SELECT name, path, description, downloadcount, maintainer, icon,
+	q := `SELECT name, path, description, maintainer, icon, downloadcount,
 		abotversion, usage, settings
 	      FROM plugins WHERE id=$1`
-	if err := db.Get(&plugin, q, ps.ByName("id")); err != nil {
+	if err := db.Get(&tmp, q, ps.ByName("id")); err != nil {
 		writeErrorBadRequest(w, err)
 		return
+	}
+	plugin := struct {
+		Name          string
+		Path          string
+		Description   *string
+		Maintainer    *string
+		Icon          *string
+		DownloadCount uint64
+		AbotVersion   float64
+		Usage         *dt.StringSlice
+		Settings      *dt.StringSlice
+	}{
+		Name:          tmp.Name,
+		Path:          tmp.Path,
+		DownloadCount: tmp.DownloadCount,
+		AbotVersion:   tmp.AbotVersion,
+		Usage:         tmp.Usage,
+		Settings:      tmp.Settings,
+	}
+	if tmp.Description.Valid {
+		plugin.Description = &tmp.Description.String
+	}
+	if tmp.Maintainer.Valid {
+		plugin.Maintainer = &tmp.Maintainer.String
+	}
+	if tmp.Icon.Valid {
+		plugin.Icon = &tmp.Icon.String
 	}
 	byt, err := json.Marshal(plugin)
 	if err != nil {
