@@ -2,4 +2,4 @@
 
 set -e
 
-ls -r db/migrations/down/*.sql | xargs -I{} -- psql -U postgres itsabot -f {}
+ls -r db/migrations/down/*.sql | xargs -I{} -- psql -U postgres itsabot -h localhost -f {}

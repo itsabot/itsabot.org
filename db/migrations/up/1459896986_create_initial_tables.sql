@@ -32,7 +32,8 @@ CREATE TABLE plugins (
 	updatedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	PRIMARY KEY (id)
 );
-CREATE UNIQUE INDEX ON plugins (name) WHERE name IS NOT NULL;
+-- CREATE UNIQUE INDEX plugins_name_idx ON plugins (name) WHERE name IS NOT NULL;
+ALTER TABLE plugins ADD CONSTRAINT plugins_name_idx UNIQUE (name);
 CREATE EXTENSION pg_trgm;
 CREATE INDEX plugins_trgm_idx ON plugins USING gin (
 	name gin_trgm_ops,

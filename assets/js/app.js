@@ -67,6 +67,7 @@ window.addEventListener("load", function() {
 		"/plugins/browse": abot.PluginsBrowse,
 		"/plugins/browse/:page": abot.PluginsBrowse,
 		"/plugins/new": abot.PluginsNew,
+		"/plugins/progress/:secret": abot.PluginsProgress,
 		"/plugins/:id": abot.PluginsInstall,
 		"/login": abot.Login,
 		"/verify": abot.Verify,
