@@ -11,7 +11,6 @@ abot.SearchResult.controller = function(pctrl) {
 			url: "/api/plugins.json",
 			data: { PluginID: id },
 		}).then(function() {
-			// TODO improve this using m.prop
 			m.route("/profile", null, true)
 		}, function(err) {
 			console.error(err)
@@ -36,7 +35,7 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 					m("td", "Name"),
 					m("td.hidden-small", "Description"),
 					m("td.hidden-small", "Downloads"),
-					m("td.hidden-small", "Errors"),
+					m("td.hidden-small", "Published"),
 				]),
 			]),
 			m("tbody", [
@@ -51,34 +50,21 @@ abot.SearchResult.view = function(ctrl, pctrl) {
 						m("td.hidden-small", plugin.Description),
 						m("td.hidden-small.center", plugin.DownloadCount),
 						function() {
-							var val = []
-							if (!plugin.CompileOK) {
-								val.push(m("span.badge.badge-error", "go get"))
-							}
-							if (!plugin.VetOK) {
-								val.push(m("span.badge.badge-error", "go vet"))
-							}
-							if (!plugin.TestOK) {
-								val.push(m("span.badge.badge-error", "go test"))
-							}
-							if (val.length === 0) {
-								val.push(m("span.badge.badge-success", "OK!"))
+							var val
+							if (plugin.Error) {
+								val = m("span.badge.badge-error", "Not Published")
+							} else {
+								val = m("span.badge.badge-success", "Published")
 							}
 							return m("td.badge-container.hidden-small", val)
 						}(),
-						m("td.text.hidden-small", function() {
-							if (plugin.Error != null) {
-								return plugin.Error.String
-							}
-							return ""
-						}),
-						m("td", function(plugin) {
-							if (!plugin.Name) {
+						m("td", function() {
+							if (plugin.Error) {
 								return m("button", {
 									onclick: ctrl.deletePlugin.bind(undefined, plugin.ID),
 								}, "Remove")
 							}
-						}(plugin)),
+						}()),
 					])
 				}),
 			]),

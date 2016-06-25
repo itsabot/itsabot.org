@@ -6,3 +6,25 @@ code {
 	background-color: #F7F7F9;
 	border-radius: 4px;
 }
+code.dark {
+	font-size: 14px;
+	padding: 1em;
+	background-color: #002833;
+	color: #EEE8D5;
+	width: 100%;
+	display: block;
+	overflow-x: auto;
+	white-space: nowrap;
+}
+code .red {
+	color: #DC322F;
+}
+code .green {
+	color: #859901;
+}
+code .pad {
+	margin-left: 2em;
+}
+code .pad-deep {
+	margin-left: 4em;
+}
