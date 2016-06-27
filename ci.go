@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/itsabot/abot/core/log"
@@ -15,6 +16,7 @@ import (
 )
 
 var pool *tunny.WorkPool
+var regexIllegal = regexp.MustCompile(`(\.\.)*['";` + "`" + `]*`)
 
 // processPlugin tests a plugin for compatibility with Abot and its APIs,
 // determining if the plugin should be published.
@@ -47,17 +49,17 @@ func processPlugin(object interface{}) interface{} {
 	// Remove any extensions like .git
 	inc.Path = strings.TrimSuffix(inc.Path, filepath.Ext(inc.Path))
 
-	// Ensure inc.Path can't go 'up' directories
+	// Ensure inc.Path can't go 'up' directories or run other commands
 	writeLineToSocket(ws, &socket.Msg{
 		Content: "> Validating " + inc.Path + "...",
 	})
-	if strings.Contains(inc.Path, "..") {
+	if regexIllegal.MatchString(inc.Path) {
 		errored = true
 		writeLineToSocket(ws, &socket.Msg{
-			Content: "[ERR] plugin path cannot contain \"..\"",
+			Content: "[ERR] plugin path cannot contain \"..\" or the characters ', \", ; or `",
 			Color:   "red",
 		})
-		return fmt.Errorf("user %d attempted to move up dir.\n",
+		return fmt.Errorf("user %d attempted illegal inc.Path.\n",
 			inc.userID)
 	}
 	writeLineToSocket(ws, &socket.Msg{
