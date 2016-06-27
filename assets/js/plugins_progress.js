@@ -2,7 +2,12 @@
 abot.PluginsProgress = {}
 abot.PluginsProgress.controller = function() {
 	var ctrl = this
-	var ws = new WebSocket("ws://" + window.location.host + "/api/ws")
+	var ws
+	if (window.location.protocol === "https:") {
+		ws = new WebSocket("wss://" + window.location.host + "/api/ws")
+	} else {
+		ws = new WebSocket("ws://" + window.location.host + "/api/ws")
+	}
 	ws.onopen = function() {
 		ws.send(m.route.param("secret"))
 
