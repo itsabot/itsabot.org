@@ -47,6 +47,24 @@ func processPlugin(object interface{}) interface{} {
 	// Remove any extensions like .git
 	inc.Path = strings.TrimSuffix(inc.Path, filepath.Ext(inc.Path))
 
+	// Ensure inc.Path can't go 'up' directories
+	writeLineToSocket(ws, &socket.Msg{
+		Content: "> Validating " + inc.Path + "...",
+	})
+	if strings.Contains(inc.Path, "..") {
+		errored = true
+		writeLineToSocket(ws, &socket.Msg{
+			Content: "[ERR] plugin path cannot contain \"..\"",
+			Color:   "red",
+		})
+		return fmt.Errorf("user %d attempted to move up dir.\n",
+			inc.userID)
+	}
+	writeLineToSocket(ws, &socket.Msg{
+		Content: "OK",
+		Color:   "green",
+	})
+
 	// go get URL
 	writeLineToSocket(ws, &socket.Msg{
 		Content: "> Fetching " + inc.Path + "...",
@@ -246,19 +264,18 @@ savePlugin:
 	writeLineToSocket(ws, &socket.Msg{
 		Content: "> Saving and updating plugin...",
 	})
-	q := `INSERT INTO plugins (name, description, downloadcount,
-			path, userid, abotversion, icon, settings,
-			usage)
-		      VALUES ($1, $2, 1, $3, $4, 0.2, $5, $6, $7)
-		      ON CONFLICT (name) DO UPDATE SET
-			description=$2,
-			downloadcount=plugins.downloadcount+1,
-			updatedat=CURRENT_TIMESTAMP,
-			abotversion=0.2,
-			icon=$5,
-			settings=$6,
-			usage=$7
-		       RETURNING id`
+	q := `INSERT INTO plugins (name, description, downloadcount, path,
+		userid, abotversion, icon, settings, usage)
+	      VALUES ($1, $2, 1, $3, $4, 0.2, $5, $6, $7)
+	      ON CONFLICT (name) DO UPDATE SET
+		description=$2,
+		downloadcount=plugins.downloadcount+1,
+		updatedat=CURRENT_TIMESTAMP,
+		abotversion=0.2,
+		icon=$5,
+		settings=$6,
+		usage=$7
+	       RETURNING id`
 	settings := dt.StringSlice{}
 	for k := range pluginJSON.Settings {
 		settings = append(settings, k)
