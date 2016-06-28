@@ -16,7 +16,8 @@ import (
 )
 
 var pool *tunny.WorkPool
-var regexIllegal = regexp.MustCompile(`(\.\.)*['";` + "`" + `]*`)
+var regexIllegalUp = regexp.MustCompile(`\.\.`)
+var regexLegal = regexp.MustCompile(`[a-zA-Z0-9_\-\.\/]+`)
 
 // processPlugin tests a plugin for compatibility with Abot and its APIs,
 // determining if the plugin should be published.
@@ -53,14 +54,28 @@ func processPlugin(object interface{}) interface{} {
 	writeLineToSocket(ws, &socket.Msg{
 		Content: "> Validating " + inc.Path + "...",
 	})
-	if regexIllegal.MatchString(inc.Path) {
+	if regexIllegalUp.MatchString(inc.Path) {
 		errored = true
 		writeLineToSocket(ws, &socket.Msg{
-			Content: "[ERR] plugin path cannot contain \"..\" or the characters ', \", ; or `",
+			Content: "[ERR] plugin path cannot contain \"..\"",
 			Color:   "red",
 		})
-		return fmt.Errorf("user %d attempted illegal inc.Path.\n",
-			inc.userID)
+		return fmt.Errorf(
+			"user %d attempted illegal inc.Path (up) %s.\n",
+			inc.userID, inc.Path)
+	}
+	if !regexLegal.MatchString(inc.Path) {
+		errored = true
+		writeLineToSocket(ws, &socket.Msg{
+			Content: "[ERR] plugin path contains invalid characters",
+			Color:   "red",
+		})
+		writeLineToSocket(ws, &socket.Msg{
+			Content: "path can only contain a-z, A-Z, 0-9, -, _, . and /",
+			Color:   "red",
+		})
+		return fmt.Errorf("user %d attempted illegal inc.Path. %s\n",
+			inc.userID, inc.Path)
 	}
 	writeLineToSocket(ws, &socket.Msg{
 		Content: "OK",
